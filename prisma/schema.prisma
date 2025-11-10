@@ -13,3 +13,100 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id_user        String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  password_hash  String
+  role           String   @default("USER") // opsional; bukan sumber kebenaran RBAC
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  user_roles     UserRole[]
+  overrides      UserPermissionOverride[]
+  reset_tokens   PasswordResetToken[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id_password_reset_token String   @id @default(cuid())
+  id_user                 String
+  code_hash               String
+  expires_at              DateTime
+  consumed_at             DateTime?
+
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@index([id_user])
+  @@index([expires_at])
+  @@map("password_reset_tokens")
+}
+
+/// ========== RBAC DINAMIS (CRUD) ==========
+model Role {
+  id_role      String          @id @default(cuid())
+  name         String          @unique
+  description  String?
+  created_at   DateTime        @default(now())
+  updated_at   DateTime        @updatedAt
+
+  user_roles       UserRole[]
+  role_permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id_permission String   @id @default(cuid())
+  resource      String   // contoh: "absensi", "izin", "pegawai"
+  action        String   // "create" | "read" | "update" | "delete"
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  role_permissions RolePermission[]
+  user_overrides   UserPermissionOverride[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@index([action])
+  @@map("permissions")
+}
+
+model UserRole {
+  id_user String
+  id_role String
+
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  role Role @relation(fields: [id_role], references: [id_role], onDelete: Cascade)
+
+  @@id([id_user, id_role])
+  @@index([id_role])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id_role       String
+  id_permission String
+
+  role       Role       @relation(fields: [id_role], references: [id_role], onDelete: Cascade)
+  permission Permission @relation(fields: [id_permission], references: [id_permission], onDelete: Cascade)
+
+  @@id([id_role, id_permission])
+  @@index([id_permission])
+  @@map("role_permissions")
+}
+
+model UserPermissionOverride {
+  id_user       String
+  id_permission String
+  grant         Boolean  // true=allow, false=deny
+
+  user       User       @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  permission Permission @relation(fields: [id_permission], references: [id_permission], onDelete: Cascade)
+
+  @@id([id_user, id_permission])
+  @@index([id_permission])
+  @@map("user_permission_overrides")
+}
