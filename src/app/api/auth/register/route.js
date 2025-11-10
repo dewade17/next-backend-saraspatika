@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/src/lib/db.js';
-import { hashPassword } from '@/src/lib/crypto.js';
-import { issueAccessToken } from '@/src/lib/jwt.js';
-import { setAuthCookie } from '@/src/lib/cookies.js';
-import { getPermSet } from '@/src/lib/rbac.js';
+import { prisma } from '@/lib/db.js';
+import { hashPassword } from '@/lib/crypto.js';
+import { issueAccessToken } from '@/lib/jwt.js';
+import { setAuthCookie } from '@/lib/cookie.js';
+import { getPermSet } from '@/lib/rbac.js';
 
 const DEFAULT_ROLE = 'GURU';
 const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']); // self-register hanya boleh pilih ini

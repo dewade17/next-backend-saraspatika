@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { prisma } from '@/src/lib/db.js';
-import { verifyAccessToken, issueAccessToken } from '@/src/lib/jwt.js';
+import { prisma } from '@lib/db.js';
+import { verifyAccessToken, issueAccessToken } from '@lib/jwt.js';
 
 const TTL = '10m';
 

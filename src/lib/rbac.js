@@ -1,4 +1,4 @@
-import { prisma } from '@/src/lib/db.js';
+import { prisma } from '@/lib/db.js';
 const TTL = 60_000;
 const cache = new Map(); // id_user -> { set:Set<string>, at:number }
 const VALID = new Set(['create', 'read', 'update', 'delete']);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyAccessToken } from '@/src/lib/jwt.js';
+import { verifyAccessToken } from '@/lib/jwt.js';
 
 export const config = { matcher: ['/(dashboard)/(.*)'] };
 
