@@ -17,5 +17,5 @@ export async function POST(req) {
   const perms = Array.from(await getPermSet(user.id_user));
   const token = await issueAccessToken({ sub: user.id_user, email: user.email, perms }, '20m');
   await setAuthCookie(token);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, token: token });
 }
