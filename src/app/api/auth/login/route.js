@@ -1,11 +1,11 @@
 // src/app/api/auth/login/route.js
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@lib/db.js';
-import { verifyPassword } from '@lib/crypto.js';
-import { getPermSet } from '@lib/rbac.js';
-import { issueAccessToken } from '@lib/jwt.js';
-import { setAuthCookie } from '@lib/cookies.js';
+import { prisma } from '@/lib/db.js';
+import { verifyPassword } from '@/lib/crypto.js';
+import { getPermSet } from '@/lib/rbac.js';
+import { issueAccessToken } from '@/lib/jwt.js';
+import { setAuthCookie } from '@/lib/cookie.js';
 
 export async function POST(req) {
   const { email, password } = await req.json();

@@ -1,9 +1,9 @@
 // src/app/api/auth/reset-password/route.js
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@lib/db.js';
+import { prisma } from '@/lib/db.js';
 import bcrypt from 'bcryptjs';
-import { hashPassword } from '@lib/crypto.js';
+import { hashPassword } from '@/lib/crypto.js';
 
 export async function POST(req) {
   const { email, code, newPassword } = await req.json();

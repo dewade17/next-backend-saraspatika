@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { prisma } from '@lib/db.js';
-import { verifyAccessToken, issueAccessToken } from '@lib/jwt.js';
-
+import { prisma } from '@/lib/db.js';
+import { verifyAccessToken, issueAccessToken } from '@/lib/jwt.js';
 const TTL = '10m';
 
 export async function GET() {

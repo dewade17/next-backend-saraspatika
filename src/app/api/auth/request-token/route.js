@@ -1,10 +1,10 @@
 // src/app/api/auth/request-token/route.js
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@lib/db.js';
-import { sixDigit } from '@lib/crypto.js';
+import { prisma } from '@/lib/db.js';
+import { sixDigit } from '@/lib/crypto.js';
 import bcrypt from 'bcryptjs';
-import { sendResetCode } from '@lib/mail.js';
+import { sendResetCode } from '@/lib/mail.js';
 
 export async function POST(req) {
   const { email } = await req.json();

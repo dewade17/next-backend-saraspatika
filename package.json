@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prisma:generate": "node scripts/prisma-generate.mjs",
+    "predev": "npm run prisma:generate",
+    "prebuild": "npm run prisma:generate",
+    "prestart": "npm run prisma:generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
