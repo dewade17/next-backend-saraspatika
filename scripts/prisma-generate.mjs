@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
+import 'dotenv/config';
 
 const PLACEHOLDER_URL = 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 
