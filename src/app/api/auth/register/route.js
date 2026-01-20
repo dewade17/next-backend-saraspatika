@@ -6,7 +6,7 @@ import { setAuthCookie } from '@/lib/cookie.js';
 import { getPermSet } from '@/lib/rbac.js';
 
 const DEFAULT_ROLE = 'GURU';
-const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']); // self-register hanya boleh pilih ini
+const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']);
 
 export async function POST(req) {
   try {
