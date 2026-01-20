@@ -1,48 +1,21 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/db.js';
+import { apiRoute } from '@/lib/api.js';
+import { unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
+import { getPrivateUserData } from '@/services/auth/auth_service.js';
 
-export async function GET() {
+export const GET = apiRoute(async () => {
   const token = (await cookies()).get('access_token')?.value;
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!token) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
-  try {
-    const payload = await verifyAccessToken(token);
-    const id_user = payload?.sub;
-    if (!id_user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const payload = await verifyAccessToken(token);
+  const id_user = payload?.sub;
+  if (!id_user) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
-    const user = await prisma.user.findUnique({
-      where: { id_user },
-      select: {
-        id_user: true,
-        name: true,
-        email: true,
-        role: true,
-      },
-    });
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const data = await getPrivateUserData(id_user);
 
-    return NextResponse.json(
-      {
-        expires_in_minutes: 10,
-        id_user: user.id_user,
-        role: user.role,
-        nama_pengguna: user.name,
-      },
-      {
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      }
-    );
-  } catch (e) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-}
+  return NextResponse.json(data, {
+    headers: { 'Cache-Control': 'no-store' },
+  });
+});
