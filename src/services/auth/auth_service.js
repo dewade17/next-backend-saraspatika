@@ -4,7 +4,7 @@ import { getPermSet } from '@/lib/rbac.js';
 import { issueAccessToken } from '@/lib/jwt.js';
 import { sendResetCode } from '@/lib/mail.js';
 import { badRequest, conflict, unauthorized } from '@/lib/error.js';
-import { findUserByEmail, findUserById, createUserWithRole, createPasswordResetToken, findLatestValidResetToken, consumeResetTokenAndUpdatePassword } from '@/app/repos/auth/auth_repo.js';
+import { findUserByEmail, findUserById, createUserWithRole, createPasswordResetToken, findLatestValidResetToken, consumeResetTokenAndUpdatePassword } from '@/repositories/auth/auth_repo.js';
 
 const DEFAULT_ROLE = 'GURU';
 const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']);
