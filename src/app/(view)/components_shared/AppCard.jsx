@@ -341,6 +341,7 @@ export const AppCard = React.forwardRef(function AppCard(
   const isClickable = Boolean((clickable || onPress || onClick || href) && !disabled);
   const computedHoverable = hoverable ?? (isClickable ? true : variantPack.hoverable);
   const computedBordered = bordered ?? variantPack.bordered;
+  const cardVariant = computedBordered == null ? undefined : computedBordered ? 'outlined' : 'borderless';
 
   const handleCardClick = async (e) => {
     if (!isClickable) return;
@@ -490,7 +491,7 @@ export const AppCard = React.forwardRef(function AppCard(
       title={headerTitleNode}
       extra={headerExtraNode}
       loading={loading}
-      bordered={computedBordered}
+      variant={cardVariant}
       hoverable={computedHoverable}
       className={className}
       classNames={classNames}

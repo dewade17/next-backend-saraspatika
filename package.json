@@ -1,5 +1,5 @@
 {
-  "name": "back-end-saraspatika",
+  "name": "dashboard-admin-api-mobile",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,6 +22,7 @@
     "nodemailer": "^7.0.10",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "webdav": "^5.8.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {

@@ -177,7 +177,7 @@ export const AppImage = React.forwardRef(function AppImage(
     wrapperStyle,
     className,
     style,
-    imgStyle,
+    imgstyle,
 
     onLoad,
     onError,
@@ -238,11 +238,11 @@ export const AppImage = React.forwardRef(function AppImage(
 
   const effectivePlaceholder = placeholder === true ? defaultPlaceholderNode({ token, radius: computedRadius, height: computedRatio ? '100%' : height }) : (placeholder ?? undefined);
 
-  const finalImgStyle = {
+  const finalimgstyle = {
     ...(computedFit ? { objectFit: computedFit } : null),
     ...(computedRadius != null ? { borderRadius: computedRadius } : null),
     ...(responsive && !computedRatio && height == null ? { height: 'auto' } : null),
-    ...(imgStyle ?? null),
+    ...(imgstyle ?? null),
   };
 
   const advanceSrc = () => {
@@ -268,7 +268,7 @@ export const AppImage = React.forwardRef(function AppImage(
         width: computedRatio ? '100%' : block ? '100%' : undefined,
         ...(style ?? null),
       }}
-      imgStyle={finalImgStyle}
+      imgstyle={finalimgstyle}
       onClick={(e) => {
         if (!isClickable) return;
         if (typeof onClick === 'function') onClick(e);
