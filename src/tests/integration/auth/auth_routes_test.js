@@ -148,14 +148,17 @@ describe('auth routes', () => {
     __setCookie('access_token', 'jwt1');
 
     jwtLib.verifyAccessToken.mockResolvedValue({ sub: 'u1' });
-    authSvc.getPrivateUserData.mockResolvedValue({ id_user: 'u1', role: 'GURU', nama_pengguna: 'Nama' });
-
+    authSvc.getPrivateUserData.mockResolvedValue({
+      id_user: 'u1',
+      role: 'GURU',
+      nama_pengguna: 'Nama',
+      permissions: ['users:read'],
+    });
     const res = await getDataPrivateRoute.GET(new Request('http://localhost/api/auth/getdataprivate'));
     expect(res.status).toBe(200);
 
     const body = await res.json();
-    expect(body).toEqual({ id_user: 'u1', role: 'GURU', nama_pengguna: 'Nama' });
-
+    expect(body).toEqual({ id_user: 'u1', role: 'GURU', nama_pengguna: 'Nama', permissions: ['users:read'] });
     expect(res.headers.get('Cache-Control')).toBe('no-store');
   });
 

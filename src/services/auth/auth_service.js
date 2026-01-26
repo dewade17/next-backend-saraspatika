@@ -104,10 +104,12 @@ export async function resetPassword({ email, code, newPassword }) {
 export async function getPrivateUserData(id_user) {
   const user = await findUserById(id_user);
   if (!user) throw unauthorized('Unauthorized', { code: 'unauthorized' });
+  const permissions = Array.from(await getPermSet(user.id_user));
 
   return {
     id_user: user.id_user,
     role: user.role,
     nama_pengguna: user.name,
+    permissions,
   };
 }

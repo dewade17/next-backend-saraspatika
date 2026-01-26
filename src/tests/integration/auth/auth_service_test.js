@@ -203,6 +203,6 @@ describe('auth_service', () => {
     repo.findUserById.mockResolvedValue({ id_user: 'u1', role: 'GURU', name: 'Nama' });
 
     const res = await svc.getPrivateUserData('u1');
-    expect(res).toEqual({ id_user: 'u1', role: 'GURU', nama_pengguna: 'Nama' });
+    expect(res).toEqual({ id_user: 'u1', role: 'GURU', nama_pengguna: 'Nama', permissions: ['users:read'] });
   });
 });

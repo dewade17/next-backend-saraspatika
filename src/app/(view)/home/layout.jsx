@@ -2,9 +2,21 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Layout, Menu, Drawer, Button, Dropdown, Avatar, Modal, Flex, Image, ConfigProvider, notification } from 'antd';
-import { HomeOutlined, UserOutlined, ScheduleOutlined, CalendarOutlined, BankOutlined, EnvironmentOutlined, SettingOutlined, ReloadOutlined, MenuOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Layout, ConfigProvider } from 'antd';
+import { HomeOutlined, UserOutlined, ScheduleOutlined, SettingOutlined, MenuOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
+import { canFromClaims } from '@/lib/rbac.js';
+
+import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
+import AppDrawer from '@/app/(view)/components_shared/AppDrawer.jsx';
+import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
+import AppImage from '@/app/(view)/components_shared/AppImage.jsx';
+import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
+import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
+import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
+import AppMenu from '@/app/(view)/components_shared/AppMenu.jsx';
+import AppDropDown from '@/app/(view)/components_shared/AppDropDown.jsx';
+import { useAppNotification } from '@/app/(view)/components_shared/AppNotification.jsx';
 
 const { Sider, Content, Footer } = Layout;
 
@@ -14,7 +26,7 @@ const menuConfig = [
     label: 'Home',
     href: '/home/admin/dashboard',
     icon: <HomeOutlined />,
-    permission: { resource: 'dashboard', action: 'view' },
+    permission: { resource: 'absensi', action: 'read' },
   },
   {
     key: 'absensi',
@@ -30,46 +42,25 @@ const menuConfig = [
     ],
   },
   {
+    key: 'pegawai',
+    label: 'Manajemen Pegawai',
+    href: '/home/admin/pegawai',
+    icon: <UserOutlined />,
+    permission: { resource: 'pegawai', action: 'read' },
+  },
+  {
     key: 'verifikasi',
-    label: 'Verifikasi Izin/Sakit/Cuti',
+    label: 'Verifikasi Izin',
     href: '/home/admin/verifikasi-karyawan',
     icon: <ScheduleOutlined />,
-    permission: { resource: 'izin', action: 'verify' },
-  },
-  {
-    key: 'agenda-kerja',
-    label: 'Agenda Kerja',
-    href: '/home/admin/agenda-kerja',
-    icon: <CalendarOutlined />,
-    permission: { resource: 'agenda', action: 'read' },
-  },
-  {
-    key: 'profil',
-    label: 'Profil perusahaan',
-    href: '/home/admin/manajemen-profil-perusahaan',
-    icon: <BankOutlined />,
-    permission: { resource: 'profil', action: 'manage' },
-  },
-  {
-    key: 'lokasi',
-    label: 'Manajemen Lokasi',
-    href: '/home/admin/manajemen-lokasi',
-    icon: <EnvironmentOutlined />,
-    permission: { resource: 'lokasi', action: 'manage' },
+    permission: { resource: 'izin', action: 'update' },
   },
   {
     key: 'pengguna',
     label: 'Manajemen Pengguna',
     href: '/home/admin/manajemen-pengguna',
     icon: <SettingOutlined />,
-    permission: { resource: 'pengguna', action: 'manage' },
-  },
-  {
-    key: 'reset-face',
-    label: 'Reset Face',
-    href: '/home/admin/reset-face',
-    icon: <ReloadOutlined />,
-    permission: { resource: 'face', action: 'reset' },
+    permission: { resource: 'pegawai', action: 'delete' },
   },
 ];
 
@@ -77,24 +68,16 @@ function buildMenuItem(label, key, icon, children) {
   return { key, icon, children, label };
 }
 
-function hasPermission(perms, resource, action) {
-  if (!resource || !action) return true;
-  return perms.includes(`${String(resource).toLowerCase()}:${String(action).toLowerCase()}`);
-}
-
 function filterMenuByPermissions(config, perms) {
   return config
     .map((item) => {
       if (item.children?.length) {
-        const children = item.children.filter((child) => hasPermission(perms, child.permission?.resource, child.permission?.action));
+        const children = item.children.filter((child) => canFromClaims(perms, child.permission?.resource, child.permission?.action));
         if (!children.length) return null;
-        return {
-          ...item,
-          children,
-        };
+        return { ...item, children };
       }
 
-      if (!hasPermission(perms, item.permission?.resource, item.permission?.action)) {
+      if (item.permission && !canFromClaims(perms, item.permission.resource, item.permission.action)) {
         return null;
       }
 
@@ -130,13 +113,19 @@ function buildMenuMap(config) {
   return map;
 }
 
-const AdminDashboardLayout = ({ children, user, perms }) => {
+const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  const [user, setUser] = useState(userProp ?? null);
+  const [perms, setPerms] = useState(permsProp ?? []);
+  const [isLoadingUser, setIsLoadingUser] = useState(!userProp);
+
   const router = useRouter();
   const pathname = usePathname();
+  const notify = useAppNotification();
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -146,54 +135,79 @@ const AdminDashboardLayout = ({ children, user, perms }) => {
   }, []);
 
   useEffect(() => {
-    if (!isMobile) setDrawerVisible(false);
-  }, [isMobile]);
+    let isActive = true;
 
-  const normalizedPerms = useMemo(() => (Array.isArray(perms) ? perms.map((perm) => String(perm).toLowerCase()) : []), [perms]);
-  const filteredMenuConfig = useMemo(() => filterMenuByPermissions(menuConfig, normalizedPerms), [normalizedPerms]);
-  const items = useMemo(() => mapMenuConfigToItems(filteredMenuConfig), [filteredMenuConfig]);
+    const loadUser = async () => {
+      try {
+        const res = await fetch('/api/auth/getdataprivate', { cache: 'no-store' });
+
+        if (res.status === 401) {
+          router.push('/login');
+          return;
+        }
+
+        if (!res.ok) throw new Error('Failed to load user');
+
+        const data = await res.json();
+        if (!isActive) return;
+
+        setUser(data);
+        setPerms(Array.isArray(data.permissions) ? data.permissions : []);
+      } catch (error) {
+        notify.error('Sesi Berakhir', 'Silakan login kembali.');
+        router.push('/login');
+      } finally {
+        if (isActive) setIsLoadingUser(false);
+      }
+    };
+
+    if (!userProp) loadUser();
+
+    return () => {
+      isActive = false;
+    };
+  }, [userProp, router, notify]);
+
+  const filteredMenuConfig = useMemo(() => filterMenuByPermissions(menuConfig, perms), [perms]);
+  const menuItems = useMemo(() => mapMenuConfigToItems(filteredMenuConfig), [filteredMenuConfig]);
   const menuMap = useMemo(() => buildMenuMap(filteredMenuConfig), [filteredMenuConfig]);
 
-  function getSelectedKeys(currentPath) {
-    const found = Object.entries(menuMap).find(([path]) => currentPath.startsWith(path));
+  const selectedKeys = useMemo(() => {
+    const entries = Object.entries(menuMap).sort((a, b) => b[0].length - a[0].length);
+    const found = entries.find(([path]) => pathname.startsWith(path));
     return found ? [found[1]] : [];
-  }
-
-  const selectedKeys = getSelectedKeys(pathname);
-
-  const handleConfirmLogout = () => {
-    setLogoutModalVisible(true);
-  };
+  }, [pathname, menuMap]);
 
   const handleLogout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', { method: 'POST' });
-      if (!res.ok) throw new Error('Logout failed');
-      notification.success({
-        message: 'Logout Berhasil',
-        description: 'Anda telah keluar dari akun.',
-      });
+      await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
     } catch (error) {
-      notification.error({
-        message: 'Logout Gagal',
-        description: error?.message || 'Terjadi kesalahan saat logout.',
-      });
-    } finally {
-      setLogoutModalVisible(false);
+      notify.error('Gagal Logout');
     }
   };
 
   const primaryColor = '#1677ff';
-  const userLabel = user?.email || `User ${user?.id || ''}`.trim();
-  const roleLabel = user?.role || 'USER';
+  const userLabel = user?.nama_pengguna || user?.email || 'User';
+
+  if (isLoadingUser) {
+    return (
+      <Layout style={{ minHeight: '100vh', padding: 40 }}>
+        <AppSkeleton
+          loading
+          active
+          avatar
+          paragraph={{ rows: 8 }}
+        />
+      </Layout>
+    );
+  }
 
   return (
     <ConfigProvider
       theme={{
         components: {
           Layout: { siderBg: 'white', triggerBg: primaryColor, triggerColor: 'white', footerBg: 'white' },
-          Menu: { colorBgContainer: 'white', colorText: primaryColor },
         },
         token: { colorPrimary: primaryColor },
       }}
@@ -207,130 +221,128 @@ const AdminDashboardLayout = ({ children, user, perms }) => {
             style={{
               position: 'fixed',
               height: '100vh',
-              overflowY: 'auto',
               left: 0,
               zIndex: 1000,
-              boxShadow: '8px 0 10px -5px rgba(0,0,0,0.07)',
+              boxShadow: '2px 0 8px rgba(0,0,0,0.05)',
             }}
-            width={200}
+            width={240}
           >
-            <div style={{ padding: '16px', textAlign: 'center' }}>
-              <Image
-                src='/assets/images/logo_green.png'
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <AppImage
+                src='/assets/images/logo_saraspatika.png'
                 alt='Logo'
-                width={80}
+                width={collapsed ? 40 : 120}
                 preview={false}
               />
             </div>
-            <Menu
+
+            <AppMenu
               mode='inline'
               selectedKeys={selectedKeys}
-              items={items}
+              items={menuItems}
+              inlineCollapsed={collapsed}
             />
           </Sider>
         )}
 
         {isMobile && (
-          <Drawer
-            title='Menu'
+          <AppDrawer
             placement='left'
-            closable
-            onClose={() => setDrawerVisible(false)}
             open={drawerVisible}
+            onOpenChange={setDrawerVisible}
+            width={280}
+            footer={false}
             bodyStyle={{ padding: 0 }}
           >
-            <Menu
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              <AppImage
+                src='/assets/images/logo_green.png'
+                alt='Logo'
+                width={100}
+                preview={false}
+              />
+            </div>
+
+            <AppMenu
               mode='inline'
               selectedKeys={selectedKeys}
-              items={items}
+              items={menuItems}
+              onAction={() => setDrawerVisible(false)}
             />
-          </Drawer>
+          </AppDrawer>
         )}
 
-        <Layout
-          style={{
-            marginLeft: !isMobile ? (collapsed ? 80 : 200) : 0,
-            marginTop: 50,
-            transition: 'margin-left 0.2s',
-          }}
-        >
-          <Flex
+        <Layout style={{ marginLeft: !isMobile ? (collapsed ? 80 : 240) : 0, transition: 'all 0.2s' }}>
+          <AppFlex
             align='center'
             justify='space-between'
             style={{
-              paddingBlock: '1rem',
-              paddingInline: '1rem',
-              position: 'fixed',
+              padding: '0 24px',
+              height: 64,
+              position: 'sticky',
               top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 998,
-              backgroundColor: '#FFFFFF',
-              boxShadow: '0px 2px 4px rgba(0,0,0,0.07)',
+              zIndex: 999,
+              backgroundColor: '#fff',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
             }}
           >
             {isMobile && (
-              <Button
+              <AppButton
                 type='text'
                 icon={<MenuOutlined />}
                 onClick={() => setDrawerVisible(true)}
               />
             )}
-            <Flex
-              justify='end'
-              align='center'
-              gap={20}
-              style={{ flex: 1 }}
-            >
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'logout',
-                      label: 'Keluar',
-                      icon: <LogoutOutlined />,
-                      onClick: handleConfirmLogout,
-                    },
-                  ],
-                }}
-                trigger={['click']}
-              >
-                <a
-                  onClick={(event) => event.preventDefault()}
-                  style={{ display: 'flex', alignItems: 'center' }}
-                >
-                  <Flex
-                    gap={10}
-                    style={{ display: 'flex', alignItems: 'center', marginRight: 10 }}
-                  >
-                    <Avatar icon={<UserOutlined />} />
-                    <div style={{ color: 'black', textAlign: 'right' }}>
-                      <div>{userLabel}</div>
-                      <div style={{ fontSize: 'smaller', marginTop: 5 }}>{roleLabel}</div>
-                    </div>
-                  </Flex>
-                </a>
-              </Dropdown>
-            </Flex>
-          </Flex>
 
-          <Content style={{ margin: '40px 16px', padding: 24, minHeight: '100vh' }}>{children}</Content>
-          <Footer style={{ textAlign: 'center', boxShadow: '0px -5px 10px rgba(0,0,0,0.07)' }}>Si Hadir ©{new Date().getFullYear()}</Footer>
+            <div style={{ flex: 1 }} />
+
+            <AppDropDown
+              trigger={['click']}
+              items={[
+                {
+                  key: 'logout',
+                  label: 'Keluar',
+                  icon: <LogoutOutlined />,
+                  onClick: () => setLogoutModalVisible(true),
+                },
+              ]}
+            >
+              <AppFlex
+                gap={12}
+                align='center'
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ textAlign: 'right', lineHeight: '1.2' }}>
+                  <div style={{ fontWeight: 600, color: '#262626' }}>{userLabel}</div>
+                  <div style={{ fontSize: 12, color: '#8c8c8c' }}>{user?.role}</div>
+                </div>
+
+                <AppAvatar
+                  icon={<UserOutlined />}
+                  style={{ backgroundColor: primaryColor }}
+                />
+              </AppFlex>
+            </AppDropDown>
+          </AppFlex>
+
+          <Content style={{ margin: '24px', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>{children}</Content>
+          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>Si Hadir ©{new Date().getFullYear()}</Footer>
         </Layout>
       </Layout>
 
-      <Modal
-        title='Keluar dari akun?'
+      <AppModal
+        title='Konfirmasi Keluar'
         open={logoutModalVisible}
+        onOpenChange={setLogoutModalVisible}
         onOk={handleLogout}
-        onCancel={() => setLogoutModalVisible(false)}
-        okText='Logout'
+        okText='Keluar'
         cancelText='Batal'
-        okType='danger'
+        okTone='danger'
+        okDanger
         centered
       >
-        <p>Anda yakin ingin keluar dari akun?</p>
-      </Modal>
+        <p>Apakah Anda yakin ingin keluar dari sistem?</p>
+      </AppModal>
     </ConfigProvider>
   );
 };
