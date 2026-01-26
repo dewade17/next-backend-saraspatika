@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Checkbox, Layout, Grid } from 'antd';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
@@ -11,15 +12,52 @@ import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppImage from '@/app/(view)/components_shared/AppImage.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
-
+import { useAppNotification } from '@/app/(view)/components_shared/AppNotification.jsx';
 const { Content } = Layout;
 
 export default function LoginPage() {
   const screens = Grid.useBreakpoint();
   const isMdUp = !!screens?.md;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const notify = useAppNotification();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onFinish = (values) => {
-    console.log('Success:', values);
+  useEffect(() => {
+    if (searchParams?.get('expired') === '1') {
+      notify.error('Sesi Berakhir', 'Silakan login kembali.');
+    }
+  }, [searchParams, notify]);
+
+  const onFinish = async (values) => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      if (!res.ok) {
+        let message = 'Email atau kata sandi tidak valid.';
+        try {
+          const data = await res.json();
+          message = data?.message || data?.error || data?.detail || message;
+        } catch {
+          // ignore parsing error
+        }
+        notify.error('Login gagal', message);
+        return;
+      }
+
+      await res.json().catch(() => null);
+      notify.success('Login berhasil', 'Selamat datang!');
+      router.push('/home/admin/dashboard');
+    } catch (error) {
+      notify.errorFrom(error, { title: 'Login gagal' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,13 +136,14 @@ export default function LoginPage() {
                 requiredMark={false}
               >
                 <AppForm.Item
-                  label='Username'
-                  name='username'
-                  rules={[{ required: true, message: 'Masukkan username Anda!' }]}
+                  label='Email'
+                  name='email'
+                  rules={[{ required: true, message: 'Masukkan email Anda!' }]}
                 >
                   <AppInput
                     prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                    placeholder='Kepala Sekolah'
+                    placeholder='contoh@sekolah.id'
+                    type='email'
                     size='large'
                   />
                 </AppForm.Item>
@@ -145,6 +184,7 @@ export default function LoginPage() {
                   htmlType='submit'
                   block
                   size='large'
+                  loading={isSubmitting}
                   style={{
                     height: 44,
                     fontWeight: 600,
