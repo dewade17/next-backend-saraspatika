@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { createClient } from 'webdav';
 import { env } from '@/lib/env.js';
-import { badRequest, internal } from '@/lib/error.js';
+import { badRequest, forbidden, internal, unauthorized } from '@/lib/error.js';
 
 export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2MB
 
@@ -20,26 +20,20 @@ const ensuredDirs = new Set();
  * @property {string | null} lastmod ISO last modified (if available)
  */
 
-function normalizeDavBaseUrl(raw) {
+function normalizeTrailingSlash(raw) {
   const u = new URL(raw);
-  // Ensure trailing slash so webdav client path joining behaves predictably.
   if (!u.pathname.endsWith('/')) u.pathname += '/';
   return u.toString();
 }
 
 function sanitizeFilename(name) {
   const base = String(name || 'file').trim();
-
-  // remove path separators just in case
   const stripped = base.replace(/[\/\\]/g, '_');
-
-  // allow a-z A-Z 0-9 . _ - and spaces; collapse others
   const safe = stripped
     .replace(/[^\w.\- ]+/g, '_')
     .replace(/\s+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_+|_+$/g, '');
-
   return safe || 'file';
 }
 
@@ -60,9 +54,8 @@ function safeJoinRemote(folder, filename) {
   const n = sanitizeFilename(filename);
 
   const joined = f ? `${f}/${n}` : n;
-
-  // prevent traversal
   const normalized = joined.replace(/\\/g, '/');
+
   if (normalized.includes('..')) {
     throw badRequest('Path file tidak valid', { code: 'invalid_path' });
   }
@@ -88,22 +81,96 @@ function sha256Hex(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
 }
 
-function getNextcloudRootInfo() {
-  // NEXTCLOUD_URL in your .env is already the user WebDAV root:
-  // https://<host>/remote.php/dav/files/<user>/
-  const baseUrl = normalizeDavBaseUrl(env.NEXTCLOUD_URL);
-  const u = new URL(baseUrl);
+function extractHttpStatus(err, depth = 0) {
+  if (!err || depth > 6) return null;
 
-  // try to derive "/remote.php/dav/files/<user>" for path calculations
+  const direct = err.status ?? err.statusCode ?? err.response?.status ?? err.res?.status ?? err.cause?.status ?? err.cause?.response?.status;
+
+  if (typeof direct === 'number') return direct;
+
+  const msg = String(err.message || '');
+  const m = msg.match(/\b(401|403|404|409|500|502|503)\b/);
+  if (m) return Number(m[1]);
+
+  return extractHttpStatus(err.cause, depth + 1);
+}
+
+function mapNextcloudError(op, err, code) {
+  const status = extractHttpStatus(err);
+
+  if (status === 401) {
+    return unauthorized(`Nextcloud Unauthorized saat ${op}. Cek NEXTCLOUD_USER/NEXTCLOUD_PASS (disarankan App Password).`, {
+      code: 'nextcloud_unauthorized',
+      cause: err,
+    });
+  }
+
+  if (status === 403) {
+    return forbidden(`Nextcloud Forbidden saat ${op}. User tidak punya izin untuk folder target.`, {
+      code: 'nextcloud_forbidden',
+      cause: err,
+    });
+  }
+
+  if (status === 404) {
+    return badRequest(`Nextcloud endpoint tidak ditemukan saat ${op}. Cek NEXTCLOUD_URL (WebDAV root).`, {
+      code: 'nextcloud_not_found',
+      cause: err,
+    });
+  }
+
+  return internal(`Gagal ${op} di Nextcloud`, { code: code ?? 'nextcloud_error', cause: err });
+}
+
+function deriveUserFromDavUrl(davBaseUrl) {
+  const u = new URL(davBaseUrl);
   const parts = u.pathname.split('/').filter(Boolean);
   const idx = parts.findIndex((p) => p === 'files');
-  const userFromUrl = idx >= 0 ? parts[idx + 1] : null;
+  return idx >= 0 ? (parts[idx + 1] ?? null) : null;
+}
 
-  return {
-    davBaseUrl: baseUrl,
-    origin: u.origin,
-    userFromUrl,
-  };
+function deriveInstanceBaseUrl(davBaseUrl) {
+  const u = new URL(davBaseUrl);
+  const parts = u.pathname.split('/').filter(Boolean);
+  const idx = parts.findIndex((p) => p === 'remote.php');
+  const basePath = idx > 0 ? `/${parts.slice(0, idx).join('/')}` : '';
+  return `${u.origin}${basePath}`;
+}
+
+/**
+ * Mendukung 2 input:
+ * 1) NEXTCLOUD_URL sudah WebDAV root: https://host[/subdir]/remote.php/dav/files/USER/
+ * 2) NEXTCLOUD_URL hanya base instance: https://host[/subdir]
+ */
+function resolveDavBaseUrl(raw, username) {
+  const user = String(username || '').trim();
+  if (!user) throw badRequest('NEXTCLOUD_USER wajib diisi', { code: 'missing_nextcloud_user' });
+
+  const u = new URL(String(raw || '').trim());
+  const p0 = u.pathname.replace(/\/+$/g, ''); // no trailing slash
+
+  // Jika user kasih /remote.php/webdav, konversi ke /remote.php/dav/files/USER
+  if (p0.endsWith('/remote.php/webdav')) {
+    u.pathname = `${p0.replace(/\/remote\.php\/webdav$/g, '')}/remote.php/dav/files/${encodeURIComponent(user)}`;
+    return normalizeTrailingSlash(u.toString());
+  }
+
+  // Jika sudah /remote.php/dav/files/...
+  if (p0.includes('/remote.php/dav/files/')) {
+    u.pathname = p0;
+    return normalizeTrailingSlash(u.toString());
+  }
+
+  // Jika user kasih base /remote.php/dav, tambah /files/USER
+  if (p0.endsWith('/remote.php/dav')) {
+    u.pathname = `${p0}/files/${encodeURIComponent(user)}`;
+    return normalizeTrailingSlash(u.toString());
+  }
+
+  // Selain itu, anggap ini base instance → tambah remote.php/dav/files/USER
+  const base = p0 || '';
+  u.pathname = `${base}/remote.php/dav/files/${encodeURIComponent(user)}`;
+  return normalizeTrailingSlash(u.toString());
 }
 
 async function ensureDir(client, folder) {
@@ -114,7 +181,6 @@ async function ensureDir(client, folder) {
 
   if (ensuredDirs.has(f)) return;
 
-  // Create recursively folder-by-folder for compatibility.
   const segments = f.split('/').filter(Boolean);
   let current = '';
   for (const seg of segments) {
@@ -136,24 +202,25 @@ export class Storage {
    * }} [opts]
    */
   constructor(opts = {}) {
-    const info = getNextcloudRootInfo();
-
-    this.davBaseUrl = normalizeDavBaseUrl(opts.davBaseUrl ?? info.davBaseUrl);
-    this.username = opts.username ?? env.NEXTCLOUD_USER;
-    this.password = opts.password ?? env.NEXTCLOUD_PASS;
+    this.username = String(opts.username ?? env.NEXTCLOUD_USER ?? '').trim();
+    this.password = String(opts.password ?? env.NEXTCLOUD_PASS ?? '').trim();
     this.defaultFolder = String(opts.defaultFolder ?? 'uploads').trim();
+
+    this.davBaseUrl = resolveDavBaseUrl(opts.davBaseUrl ?? env.NEXTCLOUD_URL, this.username);
+    this.instanceBaseUrl = deriveInstanceBaseUrl(this.davBaseUrl);
+    this.userFromUrl = deriveUserFromDavUrl(this.davBaseUrl);
+
+    if (this.userFromUrl && this.userFromUrl !== this.username && process.env.NODE_ENV !== 'production') {
+      console.warn(`WARN: NEXTCLOUD_URL user (${this.userFromUrl}) berbeda dengan NEXTCLOUD_USER (${this.username}). Pastikan konsisten.`);
+    }
 
     this.client = createClient(this.davBaseUrl, {
       username: this.username,
       password: this.password,
     });
-
-    this.origin = info.origin;
   }
 
   /**
-   * Upload any file format (no mime restriction) with max size 2MB.
-   *
    * @param {{
    *  data: Buffer | Uint8Array | ArrayBuffer | Blob,
    *  filename: string,
@@ -183,8 +250,6 @@ export class Storage {
 
     try {
       await ensureDir(this.client, folder);
-
-      // webdav: putFileContents(remotePath, data, { overwrite })
       await this.client.putFileContents(remotePath, buf, { overwrite });
 
       let etag = null;
@@ -193,9 +258,7 @@ export class Storage {
         const st = await this.client.stat(remotePath);
         etag = st?.etag ?? null;
         lastmod = st?.lastmod ?? null;
-      } catch {
-        // ignore stat failures
-      }
+      } catch {}
 
       return {
         remotePath,
@@ -206,71 +269,10 @@ export class Storage {
         lastmod,
       };
     } catch (err) {
-      throw internal('Gagal upload ke Nextcloud', { code: 'nextcloud_upload_failed', cause: err });
+      throw mapNextcloudError('upload', err, 'nextcloud_upload_failed');
     }
   }
 
-  /**
-   * Upload from multipart/form-data Request (Next.js route handler).
-   * Expects a File in form field (default: "file").
-   *
-   * @param {Request} req
-   * @param {{
-   *  fieldName?: string,
-   *  folder?: string,
-   *  overwrite?: boolean,
-   *  ensureUnique?: boolean,
-   * }} [opts]
-   * @returns {Promise<UploadResult>}
-   */
-  async uploadFromRequest(req, opts = {}) {
-    const fieldName = opts.fieldName ?? 'file';
-    const folder = opts.folder ?? this.defaultFolder;
-
-    let form;
-    try {
-      form = await req.formData();
-    } catch (err) {
-      throw badRequest('Request harus multipart/form-data', { code: 'invalid_multipart', cause: err });
-    }
-
-    const file = form.get(fieldName);
-    if (!file) throw badRequest(`Field "${fieldName}" tidak ditemukan`, { code: 'missing_file_field' });
-
-    // In Next.js (Node runtime), multipart files are provided as File.
-    if (typeof File !== 'undefined' && file instanceof File) {
-      assertMaxBytes(file.size);
-
-      const buf = await blobToBuffer(file);
-      return await this.upload({
-        data: buf,
-        filename: file.name || 'file',
-        folder,
-        overwrite: Boolean(opts.overwrite),
-        ensureUnique: opts.ensureUnique !== false,
-      });
-    }
-
-    // Some runtimes may return Blob
-    if (typeof Blob !== 'undefined' && file instanceof Blob) {
-      const buf = await blobToBuffer(file);
-      assertMaxBytes(buf.length);
-      return await this.upload({
-        data: buf,
-        filename: 'file',
-        folder,
-        overwrite: Boolean(opts.overwrite),
-        ensureUnique: opts.ensureUnique !== false,
-      });
-    }
-
-    throw badRequest('Field file bukan tipe File/Blob', { code: 'invalid_file_type' });
-  }
-
-  /**
-   * Delete a stored file.
-   * @param {string} remotePath
-   */
   async remove(remotePath) {
     if (!remotePath) throw badRequest('remotePath wajib diisi', { code: 'missing_remote_path' });
     const rp = String(remotePath).replace(/\\/g, '/');
@@ -282,7 +284,7 @@ export class Storage {
       await this.client.deleteFile(rp);
       return { ok: true, deleted: true };
     } catch (err) {
-      throw internal('Gagal menghapus file di Nextcloud', { code: 'nextcloud_delete_failed', cause: err });
+      throw mapNextcloudError('delete file', err, 'nextcloud_delete_failed');
     }
   }
 
@@ -291,29 +293,21 @@ export class Storage {
    * Uses OCS API: /ocs/v2.php/apps/files_sharing/api/v1/shares
    *
    * @param {string} remotePath e.g. "uploads/a.png"
-   * @param {{
-   *  password?: string,
-   *  expireDate?: string, // YYYY-MM-DD
-   *  permissions?: number, // default 1 (read)
-   * }} [opts]
    */
-  async createPublicShare(remotePath, opts = {}) {
+  async createPublicShare(remotePath) {
     if (!remotePath) throw badRequest('remotePath wajib diisi', { code: 'missing_remote_path' });
 
     const rp = String(remotePath).replace(/\\/g, '/');
     if (rp.includes('..')) throw badRequest('Path file tidak valid', { code: 'invalid_path' });
 
-    // OCS expects path starting with "/"
     const ocsPath = rp.startsWith('/') ? rp : `/${rp}`;
 
     const body = new URLSearchParams();
     body.set('path', ocsPath);
     body.set('shareType', '3'); // public link
-    body.set('permissions', String(opts.permissions ?? 1)); // 1 = read
-    if (opts.password) body.set('password', String(opts.password));
-    if (opts.expireDate) body.set('expireDate', String(opts.expireDate));
+    body.set('permissions', '1'); // read
 
-    const url = `${this.origin}/ocs/v2.php/apps/files_sharing/api/v1/shares`;
+    const url = `${this.instanceBaseUrl}/ocs/v2.php/apps/files_sharing/api/v1/shares`;
 
     try {
       const res = await fetch(url, {
@@ -329,10 +323,12 @@ export class Storage {
 
       const txt = await res.text();
       if (!res.ok) {
-        throw new Error(`OCS share failed (${res.status}): ${txt?.slice(0, 200)}`);
+        const e = new Error(`OCS share failed (${res.status})`);
+        e.status = res.status;
+        e.responseText = txt?.slice(0, 400);
+        throw e;
       }
 
-      // Minimal XML extraction without adding deps
       const getTag = (tag) => {
         const m = txt.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
         return m ? m[1].trim() : null;
@@ -348,10 +344,9 @@ export class Storage {
 
       return { ok: true, id, token, url: shareUrl };
     } catch (err) {
-      throw internal('Gagal membuat public share link Nextcloud', { code: 'nextcloud_share_failed', cause: err });
+      throw mapNextcloudError('create public share', err, 'nextcloud_share_failed');
     }
   }
 }
 
-// Default singleton (useful across API routes/services)
 export const storage = new Storage();

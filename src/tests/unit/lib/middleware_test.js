@@ -8,7 +8,7 @@ let middleware;
 beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
-  ({ middleware } = await import('@/middleware.js'));
+  ({ middleware } = await import('@/proxy.js'));
 });
 
 describe('middleware', () => {

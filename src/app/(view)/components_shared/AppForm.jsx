@@ -28,15 +28,29 @@ function normalizeFeedback(feedback) {
   return null;
 }
 
-function trimDeep(value) {
-  if (typeof value === 'string') return value.trim();
-  if (Array.isArray(value)) return value.map(trimDeep);
-  if (value && typeof value === 'object') {
-    const out = {};
-    for (const [k, v] of Object.entries(value)) out[k] = trimDeep(v);
-    return out;
+function isPlainObject(value) {
+  if (!value || typeof value !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function trimDeep(value, options) {
+  const emptyToUndefined = options?.emptyToUndefined === true;
+
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return emptyToUndefined && t === '' ? undefined : t;
   }
-  return value;
+
+  if (Array.isArray(value)) return value.map((v) => trimDeep(v, options));
+
+  if (!value || typeof value !== 'object') return value;
+
+  if (!isPlainObject(value)) return value;
+
+  const out = {};
+  for (const [k, v] of Object.entries(value)) out[k] = trimDeep(v, options);
+  return out;
 }
 
 function pickByPaths(values, includePaths) {
@@ -75,6 +89,77 @@ function zodToAntdFieldErrors(schemaResult) {
   }));
 }
 
+function normalizeDotPath(path) {
+  if (Array.isArray(path)) return path;
+  if (typeof path === 'string') return path.split('.').filter(Boolean);
+  return null;
+}
+
+function normalizeAnyFieldErrors(input) {
+  if (!input) return [];
+
+  if (Array.isArray(input)) {
+    const arr = input
+      .map((it) => {
+        if (!it) return null;
+        if (Array.isArray(it.name) && Array.isArray(it.errors)) return { name: it.name, errors: it.errors.map(String) };
+        if (typeof it.name === 'string' && Array.isArray(it.errors)) return { name: normalizeDotPath(it.name) ?? [it.name], errors: it.errors.map(String) };
+        return null;
+      })
+      .filter(Boolean);
+    return arr.length > 0 ? arr : [];
+  }
+
+  if (typeof input === 'object') {
+    const entries = Object.entries(input);
+    if (entries.length === 0) return [];
+    return entries
+      .map(([k, v]) => {
+        const name = normalizeDotPath(k) ?? [k];
+        if (v == null) return null;
+        if (Array.isArray(v)) return { name, errors: v.map(String) };
+        return { name, errors: [String(v)] };
+      })
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function extractSubmitFieldErrors(err) {
+  const direct = normalizeAnyFieldErrors(err?.fieldErrors);
+  if (direct.length > 0) return direct;
+
+  const nested = normalizeAnyFieldErrors(err?.response?.data?.fieldErrors);
+  if (nested.length > 0) return nested;
+
+  const alt = normalizeAnyFieldErrors(err?.response?.data?.errors);
+  if (alt.length > 0) return alt;
+
+  return [];
+}
+
+function safeJsonStringify(value) {
+  const seen = new WeakSet();
+
+  try {
+    return JSON.stringify(value, (k, v) => {
+      if (typeof v === 'bigint') return v.toString();
+      if (typeof v === 'function' || typeof v === 'symbol') return undefined;
+      if (v && typeof v === 'object') {
+        if (typeof File !== 'undefined' && v instanceof File) return undefined;
+        if (typeof Blob !== 'undefined' && v instanceof Blob) return undefined;
+        if (v instanceof Date) return v.toISOString();
+        if (seen.has(v)) return undefined;
+        seen.add(v);
+      }
+      return v;
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function runConfirm(confirm) {
   if (!confirm) return true;
 
@@ -108,9 +193,7 @@ function focusFirstError(form, errorInfo) {
 
   try {
     form?.scrollToField?.(first, { block: 'center' });
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   try {
     const inst = form?.getFieldInstance?.(first);
@@ -118,25 +201,30 @@ function focusFirstError(form, errorInfo) {
       inst.focus();
       return;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   try {
     const flat = Array.isArray(first) ? first.join('.') : String(first);
     const el = document.querySelector(`[name="${flat}"]`) || document.querySelector(`[id$="${flat}"]`) || document.querySelector('input,textarea,select');
     if (el && typeof el.focus === 'function') el.focus();
-  } catch {
-    // ignore
+  } catch {}
+}
+
+function deepMerge(base, override) {
+  if (!isPlainObject(base) || !isPlainObject(override)) return override;
+
+  const out = { ...base };
+  for (const [k, v] of Object.entries(override)) {
+    if (isPlainObject(v) && isPlainObject(base[k])) out[k] = deepMerge(base[k], v);
+    else out[k] = v;
   }
+  return out;
 }
 
 function mergeInitialValues(initialValues, persisted) {
   if (!persisted || typeof persisted !== 'object') return initialValues ?? {};
   if (!initialValues || typeof initialValues !== 'object') return persisted;
-
-  // persisted wins ONLY for keys it has
-  return { ...initialValues, ...persisted };
+  return deepMerge(initialValues, persisted);
 }
 
 export function useAppForm(formInstance) {
@@ -165,7 +253,7 @@ export function AppFormErrorSummary({ errors, title = 'Periksa kembali form kamu
       showIcon
       className={className}
       style={{ fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
-      title={title}
+      message={title}
       description={
         <ul style={{ margin: 0, paddingInlineStart: 18 }}>
           {items.map((it) => (
@@ -195,30 +283,32 @@ export const AppForm = React.forwardRef(function AppForm(
     preserve,
     validateTrigger = 'onBlur',
 
-    onSubmit, // async-friendly alias
-    onFinish, // antd original
+    onSubmit,
+    onFinish,
     onFinishFailed,
+    onError,
 
-    schema, // zod-like: { safeParse(values) }
+    schema,
     autoTrim = true,
-    transformValues, // (values) => values
-    beforeSubmit, // (values) => values | Promise<values>
-    confirm, // string | { title, description/content, okText, cancelText, danger, ... }
+    trimOptions,
+    transformValues,
+    beforeSubmit,
+    confirm,
 
     submitting,
-    setSubmitting, // optional controlled submit state setter
+    setSubmitting,
 
-    feedback, // true | { loading, success, error }
-    feedbackKey, // optional message key
+    feedback,
+    feedbackKey,
     resetOnSuccess = false,
 
-    persistKey, // localStorage key
+    persistKey,
     persistDebounceMs = 300,
-    persistInclude, // array of paths to persist (string "a.b" or ["a","b"])
+    persistInclude,
 
     autoFocusError = true,
     scrollToFirstError = true,
-    errorSummary = false, // show summary alert automatically
+    errorSummary = false,
 
     children,
     style,
@@ -241,7 +331,6 @@ export const AppForm = React.forwardRef(function AppForm(
   const persistTimerRef = React.useRef(null);
   const mountedRef = React.useRef(false);
 
-  // load persisted draft once
   React.useEffect(() => {
     if (!persistKey) return;
     if (typeof window === 'undefined') return;
@@ -252,19 +341,12 @@ export const AppForm = React.forwardRef(function AppForm(
 
       const parsed = JSON.parse(raw);
       const merged = mergeInitialValues(initialValues, parsed);
-
-      // set initial + persisted
       form.setFieldsValue(merged);
-    } catch {
-      // ignore
-    }
-  }, [form, initialValues, persistKey]); // intentionally only once per key
+    } catch {}
+  }, [form, initialValues, persistKey]);
 
-  // persist on change (debounced)
   const handleValuesChange = (changed, all) => {
     if (!persistKey || typeof window === 'undefined') return;
-
-    // skip first valuesChange firing before mount stable
     if (!mountedRef.current) return;
 
     try {
@@ -272,14 +354,11 @@ export const AppForm = React.forwardRef(function AppForm(
       persistTimerRef.current = setTimeout(() => {
         try {
           const picked = pickByPaths(all, persistInclude);
-          window.localStorage.setItem(persistKey, JSON.stringify(picked));
-        } catch {
-          // ignore
-        }
+          const raw = safeJsonStringify(picked);
+          if (raw != null) window.localStorage.setItem(persistKey, raw);
+        } catch {}
       }, persistDebounceMs);
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   React.useEffect(() => {
@@ -321,9 +400,7 @@ export const AppForm = React.forwardRef(function AppForm(
       if (persistKey && typeof window !== 'undefined') {
         try {
           window.localStorage.removeItem(persistKey);
-        } catch {
-          // ignore
-        }
+        } catch {}
       }
 
       return resolved;
@@ -344,7 +421,7 @@ export const AppForm = React.forwardRef(function AppForm(
     try {
       let values = rawValues;
 
-      if (autoTrim) values = trimDeep(values);
+      if (autoTrim) values = trimDeep(values, trimOptions);
       if (typeof transformValues === 'function') values = transformValues(values);
       if (typeof beforeSubmit === 'function') {
         const res = beforeSubmit(values);
@@ -356,20 +433,14 @@ export const AppForm = React.forwardRef(function AppForm(
         if (!parsed?.success) {
           const fieldErrors = zodToAntdFieldErrors(parsed);
           setLastErrorFields(fieldErrors);
-
-          // Set field errors to antd
           if (fieldErrors.length > 0) form.setFields(fieldErrors);
 
-          // also scroll/focus
           if (scrollToFirstError) {
             try {
               form.scrollToField(fieldErrors[0].name, { block: 'center' });
-            } catch {
-              // ignore
-            }
+            } catch {}
           }
           if (autoFocusError) focusFirstError(form, { errorFields: fieldErrors });
-
           return;
         }
         values = parsed.data;
@@ -377,8 +448,27 @@ export const AppForm = React.forwardRef(function AppForm(
 
       await doSubmit(values);
     } catch (err) {
-      // allow consumer to handle externally if needed
-      if (rest?.onError && typeof rest.onError === 'function') rest.onError(err);
+      const fieldErrors = extractSubmitFieldErrors(err);
+      if (fieldErrors.length > 0) {
+        setLastErrorFields(fieldErrors);
+        try {
+          form.setFields(fieldErrors);
+        } catch {}
+
+        if (scrollToFirstError) {
+          try {
+            form.scrollToField(fieldErrors[0].name, { block: 'center' });
+          } catch {}
+        }
+        if (autoFocusError) focusFirstError(form, { errorFields: fieldErrors });
+      }
+
+      if (typeof onError === 'function') onError(err);
+      else if (typeof rest?.onError === 'function') rest.onError(err);
+      else {
+        const fb = normalizeFeedback(feedback);
+        if (!fb?.error) message.error(toErrorMessage(err));
+      }
     } finally {
       setSubmittingSafe(false);
     }
@@ -392,9 +482,7 @@ export const AppForm = React.forwardRef(function AppForm(
       try {
         const first = errFields?.[0]?.name;
         if (first) form.scrollToField(first, { block: 'center' });
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
     if (autoFocusError) focusFirstError(form, errorInfo);
 
@@ -402,7 +490,6 @@ export const AppForm = React.forwardRef(function AppForm(
   };
 
   const computedInitialValues = React.useMemo(() => {
-    // keep original initialValues; persisted is applied in effect via setFieldsValue
     return initialValues;
   }, [initialValues]);
 
@@ -492,13 +579,7 @@ export function AppFormSection({ title, description, extra, children, style, cla
   );
 }
 
-export function AppFormActions({
-  children,
-  align = 'right', // left|center|right|between
-  gap = 10,
-  style,
-  className,
-}) {
+export function AppFormActions({ children, align = 'right', gap = 10, style, className }) {
   const justifyContent = align === 'left' ? 'flex-start' : align === 'center' ? 'center' : align === 'between' ? 'space-between' : 'flex-end';
 
   return (
@@ -519,16 +600,7 @@ export function AppFormActions({
   );
 }
 
-export function AppFormSubmitButton({
-  form,
-  children = 'Simpan',
-  onPress, // optional extra action (runs after validate ok, before submit)
-  htmlType = 'submit',
-  loading,
-  disabled,
-  ...props
-}) {
-  // If form instance provided, we can ensure validation before onPress
+export function AppFormSubmitButton({ form, children = 'Simpan', onPress, htmlType = 'submit', loading, disabled, ...props }) {
   const handlePress = async () => {
     if (!form) return onPress?.();
     await form.validateFields();

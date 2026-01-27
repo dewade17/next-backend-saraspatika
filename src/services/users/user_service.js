@@ -55,18 +55,22 @@ export async function createUserService(input) {
 export async function updateUserService(id_user, input) {
   const data = {};
 
-  if (input.email != null) data.email = normalizeEmail(input.email);
-  if (input.name != null) data.name = input.name;
-  if (input.status != null) data.status = input.status;
-  if (input.nomor_handphone != null) data.nomor_handphone = input.nomor_handphone;
-  if (input.nip != null) data.nip = input.nip;
-  if (input.foto_profil_url != null) data.foto_profil_url = input.foto_profil_url;
+  if (input.email !== undefined) data.email = normalizeEmail(input.email);
+  if (input.name !== undefined) data.name = input.name;
+  if (input.status !== undefined) data.status = input.status;
+  if (input.nomor_handphone !== undefined) data.nomor_handphone = input.nomor_handphone;
+  if (input.nip !== undefined) data.nip = input.nip;
 
-  if (input.password != null) {
+  // Gunakan undefined check agar null (hapus foto) bisa lewat
+  if (input.foto_profil_url !== undefined) {
+    data.foto_profil_url = input.foto_profil_url;
+  }
+
+  if (input.password !== undefined) {
     data.password_hash = await hashPassword(String(input.password));
   }
 
-  if (input.role != null) {
+  if (input.role !== undefined) {
     data.role_name = normalizeRole(input.role);
   }
 
