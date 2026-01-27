@@ -5,7 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -13,13 +14,17 @@ datasource db {
 }
 
 model User {
-  id_user       String   @id @default(uuid())
-  email         String   @unique
-  name          String?
-  password_hash String
-  role          String   @default("USER") // opsional; bukan sumber kebenaran RBAC
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  id_user         String   @id @default(uuid())
+  email           String   @unique
+  name            String?
+  password_hash   String
+  status          String?
+  nomor_handphone String?
+  nip             String?  @unique
+  foto_profil_url String?  @db.Text
+  role            String   @default("GURU")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   user_roles   UserRole[]
   overrides    UserPermissionOverride[]

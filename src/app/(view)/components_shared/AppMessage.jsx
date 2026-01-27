@@ -277,15 +277,22 @@ function createFacade(api) {
 const coreFacade = createFacade(message);
 
 export function useAppMessage() {
+  let api = null;
+
   // Prefer Antd <App> context jika tersedia
   try {
     const ctx = AntdApp.useApp();
-    const api = ctx?.message;
-    if (api) return createFacade(api);
+    api = ctx?.message ?? null;
   } catch {
-    // ignore
+    api = null;
   }
-  return coreFacade;
+
+  const facade = React.useMemo(() => {
+    if (api) return createFacade(api);
+    return coreFacade;
+  }, [api]);
+
+  return facade;
 }
 
 export function AppMessageProvider({ children, config }) {

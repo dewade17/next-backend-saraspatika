@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifyAccessToken } from '@/lib/jwt.js';
-import { getPermSet, canFromClaims } from '@/lib/rbac.js';
+import { getPermSet, canFromClaims } from '@/lib/rbac_server.js';
 
 async function ctx() {
   const token = (await cookies()).get('access_token')?.value;

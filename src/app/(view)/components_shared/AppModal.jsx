@@ -191,6 +191,7 @@ export const AppModal = React.forwardRef(function AppModal(
     centered = true,
     maskClosable = true,
     keyboard = true,
+    destroyOnHidden,
     destroyOnClose = false,
     forceRender = false,
     closable = true,
@@ -527,6 +528,8 @@ export const AppModal = React.forwardRef(function AppModal(
     },
   };
 
+  const mergedDestroyOnHidden = typeof destroyOnHidden === 'boolean' ? destroyOnHidden : destroyOnClose;
+
   const defaultModalRender = (node) => (
     <div
       ref={wrapperRef}
@@ -546,7 +549,7 @@ export const AppModal = React.forwardRef(function AppModal(
       closable={closable}
       maskClosable={maskClosable}
       keyboard={keyboard}
-      destroyOnClose={destroyOnClose}
+      destroyOnHidden={mergedDestroyOnHidden}
       forceRender={forceRender}
       getContainer={getContainer}
       zIndex={zIndex}

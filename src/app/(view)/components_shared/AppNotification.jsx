@@ -450,15 +450,23 @@ function createFacade(apiInstance) {
 const coreFacade = createFacade(notification);
 
 export function useAppNotification() {
+  let api = null;
+
   // Prefer AntD <App> context jika ada
   try {
     const ctx = AntdApp.useApp();
-    const api = ctx?.notification;
-    if (api) return createFacade(api);
+    api = ctx?.notification ?? null;
   } catch {
-    // ignore
+    api = null;
   }
-  return coreFacade;
+
+  // Memoize supaya facade tidak dibuat ulang setiap render
+  const facade = React.useMemo(() => {
+    if (api) return createFacade(api);
+    return coreFacade;
+  }, [api]);
+
+  return facade;
 }
 
 export function AppNotificationProvider({ children, config }) {

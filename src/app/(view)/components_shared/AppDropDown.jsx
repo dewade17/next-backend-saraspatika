@@ -97,8 +97,11 @@ export default function AppDropDown({
   width,
   overlayStyle,
   overlayClassName,
+  styles,
+  classNames,
   className,
 
+  popupRender,
   dropdownRender,
   getPopupContainer,
 }) {
@@ -223,7 +226,22 @@ export default function AppDropDown({
     };
   }, [computedItems, menu, runAction]);
 
-  const composedDropdownRender = useCallback(
+  const mergedClassNames = useMemo(() => {
+    if (!overlayClassName) return classNames;
+    if (!classNames) return { root: overlayClassName };
+    const root = classNames.root ? `${classNames.root} ${overlayClassName}` : overlayClassName;
+    return { ...classNames, root };
+  }, [classNames, overlayClassName]);
+
+  const mergedStyles = useMemo(() => {
+    if (!overlayStyle) return styles;
+    if (!styles) return { root: overlayStyle };
+    const rootBase = styles.root && typeof styles.root === 'object' ? styles.root : null;
+    const root = rootBase ? { ...rootBase, ...overlayStyle } : overlayStyle;
+    return { ...styles, root };
+  }, [overlayStyle, styles]);
+
+  const composedPopupRender = useCallback(
     (originNode) => {
       const ctx = {
         open: mergedOpen,
@@ -283,10 +301,11 @@ export default function AppDropDown({
         </div>
       );
 
-      const withUser = typeof dropdownRender === 'function' ? dropdownRender(built) : built;
+      const userRender = typeof popupRender === 'function' ? popupRender : dropdownRender;
+      const withUser = typeof userRender === 'function' ? userRender(built) : built;
       return withUser;
     },
-    [actionLoading, dropdownRender, footer, header, mergedOpen, query, searchable, searchPlaceholder, setOpenSafe, width],
+    [actionLoading, dropdownRender, footer, header, mergedOpen, popupRender, query, searchable, searchPlaceholder, setOpenSafe, width],
   );
 
   return (
@@ -299,9 +318,9 @@ export default function AppDropDown({
       placement={placement}
       arrow={arrow}
       menu={mergedMenu}
-      overlayClassName={overlayClassName}
-      overlayStyle={overlayStyle}
-      dropdownRender={composedDropdownRender}
+      classNames={mergedClassNames}
+      styles={mergedStyles}
+      popupRender={composedPopupRender}
       getPopupContainer={getPopupContainer}
     >
       {ensureTriggerChild(children)}

@@ -11,7 +11,7 @@ let rbac;
 beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
-  rbac = await import('@/lib/rbac.js');
+  rbac = await import('@/lib/rbac_server.js');
 });
 
 describe('lib/rbac', () => {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Checkbox, Layout, Grid } from 'antd';
+import { useRouter } from 'next/navigation';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
@@ -11,15 +12,35 @@ import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppImage from '@/app/(view)/components_shared/AppImage.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
+import { useAppMessage } from '@/app/(view)/components_shared/AppMessage.jsx';
+import { createHttpClient } from '@/lib/http_client.js';
 
 const { Content } = Layout;
 
 export default function LoginPage() {
   const screens = Grid.useBreakpoint();
   const isMdUp = !!screens?.md;
+  const router = useRouter();
+  const message = useAppMessage();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const client = React.useMemo(() => createHttpClient(), []);
 
-  const onFinish = (values) => {
-    console.log('Success:', values);
+  const onFinish = async (values) => {
+    setIsSubmitting(true);
+    try {
+      await client.post('/api/auth/login', {
+        json: {
+          email: values.email,
+          password: values.password,
+        },
+      });
+      message.success('Berhasil masuk');
+      router.push('/home/dashboard');
+    } catch (error) {
+      message.errorFrom(error, { fallback: 'Gagal login' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,13 +119,13 @@ export default function LoginPage() {
                 requiredMark={false}
               >
                 <AppForm.Item
-                  label='Username'
-                  name='username'
-                  rules={[{ required: true, message: 'Masukkan username Anda!' }]}
+                  label='Email'
+                  name='email'
+                  rules={[{ required: true, message: 'Masukkan email Anda!' }]}
                 >
                   <AppInput
                     prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                    placeholder='Kepala Sekolah'
+                    placeholder='nama@email.com'
                     size='large'
                   />
                 </AppForm.Item>
@@ -145,6 +166,7 @@ export default function LoginPage() {
                   htmlType='submit'
                   block
                   size='large'
+                  loading={isSubmitting}
                   style={{
                     height: 44,
                     fontWeight: 600,

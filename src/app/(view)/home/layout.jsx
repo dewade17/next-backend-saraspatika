@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Layout, ConfigProvider } from 'antd';
 import { HomeOutlined, UserOutlined, ScheduleOutlined, SettingOutlined, MenuOutlined, LogoutOutlined } from '@ant-design/icons';
-import { useRouter, usePathname } from 'next/navigation';
-import { canFromClaims } from '@/lib/rbac.js';
+import { usePathname } from 'next/navigation';
+import { canFromClaims } from '@/lib/rbac_client.js';
 
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppDrawer from '@/app/(view)/components_shared/AppDrawer.jsx';
@@ -16,7 +16,8 @@ import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
 import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
 import AppMenu from '@/app/(view)/components_shared/AppMenu.jsx';
 import AppDropDown from '@/app/(view)/components_shared/AppDropDown.jsx';
-import { useAppNotification } from '@/app/(view)/components_shared/AppNotification.jsx';
+
+import ProviderAuth, { useAuth } from './providerAuth.jsx';
 
 const { Sider, Content, Footer } = Layout;
 
@@ -24,7 +25,7 @@ const menuConfig = [
   {
     key: 'home',
     label: 'Home',
-    href: '/home/admin/dashboard',
+    href: '/home/dashboard',
     icon: <HomeOutlined />,
     permission: { resource: 'absensi', action: 'read' },
   },
@@ -36,7 +37,7 @@ const menuConfig = [
       {
         key: 'absensi-karyawan',
         label: 'Karyawan',
-        href: '/home/admin/absensi-karyawan',
+        href: '/home/absensi-karyawan',
         permission: { resource: 'absensi', action: 'read' },
       },
     ],
@@ -44,21 +45,21 @@ const menuConfig = [
   {
     key: 'pegawai',
     label: 'Manajemen Pegawai',
-    href: '/home/admin/pegawai',
+    href: '/home/pegawai',
     icon: <UserOutlined />,
     permission: { resource: 'pegawai', action: 'read' },
   },
   {
     key: 'verifikasi',
     label: 'Verifikasi Izin',
-    href: '/home/admin/verifikasi-karyawan',
+    href: '/home/verifikasi-karyawan',
     icon: <ScheduleOutlined />,
     permission: { resource: 'izin', action: 'update' },
   },
   {
     key: 'pengguna',
     label: 'Manajemen Pengguna',
-    href: '/home/admin/manajemen-pengguna',
+    href: '/home/manajemen-pengguna',
     icon: <SettingOutlined />,
     permission: { resource: 'pegawai', action: 'delete' },
   },
@@ -113,19 +114,15 @@ function buildMenuMap(config) {
   return map;
 }
 
-const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) => {
+function AdminDashboardShell({ children }) {
+  const { user, perms, isLoadingUser, logout } = useAuth();
+
   const [collapsed, setCollapsed] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
-  const [user, setUser] = useState(userProp ?? null);
-  const [perms, setPerms] = useState(permsProp ?? []);
-  const [isLoadingUser, setIsLoadingUser] = useState(!userProp);
-
-  const router = useRouter();
   const pathname = usePathname();
-  const notify = useAppNotification();
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -133,40 +130,6 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const loadUser = async () => {
-      try {
-        const res = await fetch('/api/auth/getdataprivate', { cache: 'no-store' });
-
-        if (res.status === 401) {
-          router.push('/login');
-          return;
-        }
-
-        if (!res.ok) throw new Error('Failed to load user');
-
-        const data = await res.json();
-        if (!isActive) return;
-
-        setUser(data);
-        setPerms(Array.isArray(data.permissions) ? data.permissions : []);
-      } catch (error) {
-        notify.error('Sesi Berakhir', 'Silakan login kembali.');
-        router.push('/login');
-      } finally {
-        if (isActive) setIsLoadingUser(false);
-      }
-    };
-
-    if (!userProp) loadUser();
-
-    return () => {
-      isActive = false;
-    };
-  }, [userProp, router, notify]);
 
   const filteredMenuConfig = useMemo(() => filterMenuByPermissions(menuConfig, perms), [perms]);
   const menuItems = useMemo(() => mapMenuConfigToItems(filteredMenuConfig), [filteredMenuConfig]);
@@ -179,17 +142,14 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
   }, [pathname, menuMap]);
 
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
-    } catch (error) {
-      notify.error('Gagal Logout');
-    }
+    setLogoutModalVisible(false);
+    await logout();
   };
 
   const primaryColor = '#1677ff';
   const userLabel = user?.nama_pengguna || user?.email || 'User';
 
+  // ⛔️ Proteksi folder /home: block render sampai user ter-load (dan id_user sudah tersimpan di localStorage)
   if (isLoadingUser) {
     return (
       <Layout style={{ minHeight: '100vh', padding: 40 }}>
@@ -202,6 +162,10 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
       </Layout>
     );
   }
+
+  // Kalau user gagal di-load, ProviderAuth akan redirect ke /login.
+  // Return null supaya tidak sempat render shell.
+  if (!user) return null;
 
   return (
     <ConfigProvider
@@ -231,7 +195,7 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
               <AppImage
                 src='/assets/images/logo_saraspatika.png'
                 alt='Logo'
-                width={collapsed ? 40 : 120}
+                width={collapsed ? 40 : 50}
                 preview={false}
               />
             </div>
@@ -256,7 +220,7 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
           >
             <div style={{ padding: '24px', textAlign: 'center' }}>
               <AppImage
-                src='/assets/images/logo_green.png'
+                src='/assets/images/logo_saraspatika.png'
                 alt='Logo'
                 width={100}
                 preview={false}
@@ -326,7 +290,7 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
           </AppFlex>
 
           <Content style={{ margin: '24px', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>{children}</Content>
-          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>Si Hadir ©{new Date().getFullYear()}</Footer>
+          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>Si Hadir Saraspatika ©{new Date().getFullYear()}</Footer>
         </Layout>
       </Layout>
 
@@ -345,6 +309,12 @@ const AdminDashboardLayout = ({ children, user: userProp, perms: permsProp }) =>
       </AppModal>
     </ConfigProvider>
   );
-};
+}
 
-export default AdminDashboardLayout;
+export default function AdminDashboardLayout({ children }) {
+  return (
+    <ProviderAuth>
+      <AdminDashboardShell>{children}</AdminDashboardShell>
+    </ProviderAuth>
+  );
+}

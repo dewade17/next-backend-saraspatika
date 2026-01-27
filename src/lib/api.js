@@ -9,6 +9,7 @@ export function apiRoute(handler) {
     try {
       return await handler(req, ctx);
     } catch (err) {
+      console.error('API Error Detail:', err); // Tambahkan baris ini untuk melihat error di terminal
       return errorResponse(err);
     }
   };

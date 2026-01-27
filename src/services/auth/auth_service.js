@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { hashPassword, verifyPassword, sixDigit } from '@/lib/crypto.js';
-import { getPermSet } from '@/lib/rbac.js';
+import { getPermSet } from '@/lib/rbac_server.js';
 import { issueAccessToken } from '@/lib/jwt.js';
 import { sendResetCode } from '@/lib/mail.js';
 import { badRequest, conflict, unauthorized } from '@/lib/error.js';
