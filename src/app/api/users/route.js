@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { apiRoute, parseBody } from '@/lib/api.js';
+import { apiRoute } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
 
 import { userCreateValidation } from '@/validations/users/user_validation.js';
 import { createUserService, listUsersService } from '@/services/users/user_service.js';
+import { parseUserRequest } from '@/app/api/users/helpers.js';
 
 export const runtime = 'nodejs';
 
@@ -56,7 +57,7 @@ export const GET = apiRoute(async (req) => {
 export const POST = apiRoute(async (req) => {
   await requirePerm('pegawai', 'create');
 
-  const input = await parseBody(req, userCreateValidation);
+  const input = await parseUserRequest(req, userCreateValidation);
   const user = await createUserService(input);
 
   return NextResponse.json(

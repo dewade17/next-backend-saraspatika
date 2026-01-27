@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { apiRoute, parseBody } from '@/lib/api.js';
+import { apiRoute } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
 
 import { userUpdateValidation } from '@/validations/users/user_validation.js';
 import { deleteUserService, getUserByIdService, updateUserService } from '@/services/users/user_service.js';
+import { parseUserRequest } from '@/app/api/users/helpers.js';
+
+export const runtime = 'nodejs';
 
 async function requirePerm(resource, action) {
   const token = (await cookies()).get('access_token')?.value;
@@ -30,7 +33,10 @@ async function requirePerm(resource, action) {
 export const GET = apiRoute(async (_req, ctx) => {
   await requirePerm('pegawai', 'read');
 
-  const id = ctx?.params?.id;
+  // Unwrapping params dengan await
+  const params = await ctx.params;
+  const id = params?.id;
+
   const user = await getUserByIdService(id);
 
   return NextResponse.json(
@@ -44,8 +50,11 @@ export const GET = apiRoute(async (_req, ctx) => {
 export const PATCH = apiRoute(async (req, ctx) => {
   await requirePerm('pegawai', 'update');
 
-  const id = ctx?.params?.id;
-  const input = await parseBody(req, userUpdateValidation);
+  // Unwrapping params dengan await
+  const params = await ctx.params;
+  const id = params?.id;
+
+  const input = await parseUserRequest(req, userUpdateValidation);
 
   const user = await updateUserService(id, input);
 
@@ -60,7 +69,10 @@ export const PATCH = apiRoute(async (req, ctx) => {
 export const DELETE = apiRoute(async (_req, ctx) => {
   await requirePerm('pegawai', 'delete');
 
-  const id = ctx?.params?.id;
+  // Unwrapping params dengan await
+  const params = await ctx.params;
+  const id = params?.id;
+
   const user = await deleteUserService(id);
 
   return NextResponse.json(

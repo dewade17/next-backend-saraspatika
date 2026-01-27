@@ -15,15 +15,15 @@ import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
 import AppFloatButton from '@/app/(view)/components_shared/AppFloatButton.jsx';
 import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
+import AppUpload from '@/app/(view)/components_shared/AppUpload.jsx';
 import { useAppMessage } from '@/app/(view)/components_shared/AppMessage.jsx';
 import { createHttpClient } from '@/lib/http_client.js';
 
 const ROLE_OPTIONS = ['GURU', 'PEGAWAI', 'ADMIN'];
-
-function safeText(v) {
-  const s = v == null ? '' : String(v);
-  return s.trim() ? s : '-';
-}
+const STATUS_OPTIONS = [
+  { label: 'Aktif', value: 'aktif' },
+  { label: 'Non-Aktif', value: 'non_aktif' },
+];
 
 function normalizeQuery(q) {
   return String(q || '')
@@ -38,6 +38,52 @@ function matchesQuery(user, q) {
   const hay = [user?.name, user?.email, user?.nip, user?.nomor_handphone, user?.role, user?.status].map((x) => (x == null ? '' : String(x).toLowerCase())).join(' ');
 
   return hay.includes(s);
+}
+
+function normalizeStatus(value) {
+  const s = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (!s) return '';
+  if (s === 'aktif') return 'aktif';
+  if (s === 'non_aktif' || s === 'non-aktif' || s === 'non aktif') return 'non_aktif';
+  return s;
+}
+
+function buildInitialFotoFileList(url) {
+  if (!url) return [];
+  return [
+    {
+      uid: 'foto-profil-initial',
+      name: 'Foto Profil',
+      status: 'done',
+      url,
+    },
+  ];
+}
+
+function pickUploadFile(fileList) {
+  if (!Array.isArray(fileList)) return null;
+  const hit = fileList.find((f) => f?.originFileObj);
+  return hit?.originFileObj ?? null;
+}
+
+function buildPayload(values) {
+  return Object.fromEntries(Object.entries(values || {}).filter(([, v]) => v !== undefined && v !== null));
+}
+
+function safeText(value, fallback = '-') {
+  if (value == null) return fallback;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : fallback;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return String(value);
+  } catch {
+    return fallback;
+  }
 }
 
 function UserCard({ user, onEdit, onDelete, isDeleting }) {
@@ -131,8 +177,8 @@ function UserFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSu
       email: initialValues?.email ?? '',
       nip: initialValues?.nip ?? '',
       nomor_handphone: initialValues?.nomor_handphone ?? '',
-      status: initialValues?.status ?? '',
-      foto_profil_url: initialValues?.foto_profil_url ?? '',
+      status: normalizeStatus(initialValues?.status),
+      foto_profil_file: buildInitialFotoFileList(initialValues?.foto_profil_url),
       role: initialValues?.role ?? 'GURU',
       password: '',
     });
@@ -205,7 +251,10 @@ function UserFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSu
             label='Status'
             name='status'
           >
-            <AppInput placeholder='Status' />
+            <Select
+              options={STATUS_OPTIONS}
+              placeholder='Pilih status'
+            />
           </AppForm.Item>
 
           <AppForm.Item
@@ -220,10 +269,17 @@ function UserFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSu
           </AppForm.Item>
 
           <AppForm.Item
-            label='Foto Profil URL'
-            name='foto_profil_url'
+            label='Foto Profil'
+            name='foto_profil_file'
+            valuePropName='value'
+            trigger='onValueChange'
           >
-            <AppInput placeholder='https://...' />
+            <AppUpload.Image
+              maxCount={1}
+              feedback
+              feedbackError='Gagal upload file'
+              feedbackSuccess='File siap diupload'
+            />
           </AppForm.Item>
 
           <AppForm.Item
@@ -302,7 +358,23 @@ export default function ManajemenPenggunaPage() {
   const handleCreate = async (values) => {
     setSubmitting(true);
     try {
-      await client.post('/api/users', { json: values });
+      const file = pickUploadFile(values?.foto_profil_file);
+      // Hapus field file agar tidak ikut masuk ke JSON/Body data teks
+      const { foto_profil_file, ...payload } = values;
+
+      if (file) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        });
+        formData.append('foto_profil', file);
+        await client.post('/api/users', { body: formData });
+      } else {
+        await client.post('/api/users', { json: payload });
+      }
+
       message.success('Pengguna berhasil dibuat');
       setCreateOpen(false);
       await fetchUsers();
@@ -318,7 +390,27 @@ export default function ManajemenPenggunaPage() {
 
     setSubmitting(true);
     try {
-      await client.patch(`/api/users/${activeUser.id_user}`, { json: values });
+      const file = pickUploadFile(values?.foto_profil_file);
+      // Pastikan foto_profil_url yang lama tetap ikut dikirim jika tidak ada file baru
+      const payload = {
+        ...values,
+        foto_profil_url: activeUser.foto_profil_url,
+        foto_profil_file: undefined,
+      };
+
+      if (file) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        });
+        formData.append('foto_profil', file);
+        await client.patch(`/api/users/${activeUser.id_user}`, { body: formData });
+      } else {
+        await client.patch(`/api/users/${activeUser.id_user}`, { json: payload });
+      }
+
       message.success('Pengguna berhasil diperbarui');
       setEditOpen(false);
       setActiveUser(null);

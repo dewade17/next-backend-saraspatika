@@ -6,4 +6,7 @@ export const env = cleanEnv(process.env, {
   JWT_SECRET: str(),
   GMAIL_USER: str(),
   GMAIL_APP_PASSWORD: str(),
+  NEXTCLOUD_URL: str(),
+  NEXTCLOUD_USER: str(),
+  NEXTCLOUD_PASS: str(),
 });
