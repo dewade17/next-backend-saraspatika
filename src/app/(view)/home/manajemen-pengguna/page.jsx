@@ -276,6 +276,7 @@ function UserFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSu
           >
             <AppUpload.Image
               maxCount={1}
+              autoUpload={false}
               feedback
               feedbackError='Gagal upload file'
               feedbackSuccess='File siap diupload'
