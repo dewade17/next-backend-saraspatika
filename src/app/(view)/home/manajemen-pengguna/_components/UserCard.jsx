@@ -1,11 +1,11 @@
 import React from 'react';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import { safeText } from '../_utils/userHelpers';
 
-export default function UserCard({ user, onEdit, onDelete, isDeleting }) {
+export default function UserCard({ user, onEdit, onDelete, onPermission, isDeleting }) {
   return (
     <AppCard
       bordered
@@ -39,29 +39,41 @@ export default function UserCard({ user, onEdit, onDelete, isDeleting }) {
         </AppTypography>
       </div>
 
-      <div style={{ display: 'flex', gap: 0, width: '100%', overflow: 'hidden', borderRadius: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <AppButton
+          type='default'
+          size='small'
+          icon={<KeyOutlined />}
+          onClick={() => onPermission?.(user)}
+        >
+          Permission
+        </AppButton>
+      </div>
+
+      <div style={{ display: 'flex', width: '100%', overflow: 'hidden', borderRadius: 8 }}>
         <AppButton
           type='primary'
           icon={<EditOutlined />}
           block
-          style={{ borderRadius: 0, flex: 1 }}
-          onClick={() => onEdit(user)}
+          style={{ flex: 1, borderRadius: '8px 0 0 8px' }}
+          onClick={() => onEdit?.(user)}
         >
           Edit
         </AppButton>
+
         <AppButton
           type='primary'
           danger
           icon={<DeleteOutlined />}
           block
           loading={isDeleting}
-          style={{ borderRadius: 0, flex: 1 }}
+          style={{ flex: 1, borderRadius: '0 8px 8px 0' }}
           confirm={{
             title: 'Hapus pengguna ini?',
             okText: 'Hapus',
             cancelText: 'Batal',
           }}
-          onClick={() => onDelete(user)}
+          onClick={() => onDelete?.(user)}
         >
           Delete
         </AppButton>
