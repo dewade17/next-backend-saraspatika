@@ -2,17 +2,14 @@ const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-require('dotenv').config(); // Pastikan variabel lingkungan dimuat
+require('dotenv').config();
 
-// Ambil URL database dari .env
 const connectionString = process.env.DATABASE_URL;
-
-// Inisialisasi pool dan adapter untuk Prisma 7
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
-
-// Inisialisasi Prisma Client dengan adapter (WAJIB di Prisma 7)
 const prisma = new PrismaClient({ adapter });
+
+// --- HELPER FUNCTIONS ---
 
 function norm(v) {
   return String(v ?? '')
@@ -43,81 +40,94 @@ async function upsertRole(name, description) {
 }
 
 /**
- * Build role->Set(permissionKey)
+ * Helper untuk memberikan/mencabut izin spesifik per User (Hybrid RBAC).
+ * Fitur ini disiapkan untuk kebutuhan manajemen user spesifik di masa depan.
  */
+async function upsertUserOverride(email, resource, action, isGrant = true) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    console.warn(`⚠️ User ${email} tidak ditemukan, skip override.`);
+    return;
+  }
+
+  const r = norm(resource);
+  const a = norm(action);
+
+  const perm = await prisma.permission.findUnique({
+    where: { resource_action: { resource: r, action: a } },
+  });
+
+  if (!perm) {
+    console.warn(`⚠️ Permission ${r}:${a} tidak ditemukan di database.`);
+    return;
+  }
+
+  await prisma.userPermissionOverride.upsert({
+    where: {
+      id_user_id_permission: {
+        id_user: user.id_user,
+        id_permission: perm.id_permission,
+      },
+    },
+    update: { grant: isGrant },
+    create: {
+      id_user: user.id_user,
+      id_permission: perm.id_permission,
+      grant: isGrant,
+    },
+  });
+
+  console.log(`   ✨ Override Akses: ${email} -> [${r}:${a}] = ${isGrant ? 'DIZINKAN' : 'DILARANG'}`);
+}
+
 function buildRoleMatrix() {
   const CRUD = ['create', 'read', 'update', 'delete'];
+  const roles = ['ADMIN', 'KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'];
 
-  const matrix = {
-    ADMIN: new Set(),
-    KEPALA_SEKOLAH: new Set(),
-    GURU: new Set(),
-    PEGAWAI: new Set(),
-  };
+  const matrix = {};
+  roles.forEach((r) => (matrix[r] = new Set()));
 
-  const grant = (roles, resource, actions) => {
+  const grant = (targetRoles, resource, actions) => {
     const acts = Array.isArray(actions) ? actions : [actions];
-    for (const roleName of roles) {
+    targetRoles.forEach((roleName) => {
       const set = matrix[roleName];
-      if (!set) continue;
-      for (const a of acts) set.add(key(resource, a));
-    }
+      if (set) acts.forEach((a) => set.add(key(resource, a)));
+    });
   };
 
-  // ===== Auth (SKPL.F-001, F-002, F-003) =====
-  grant(['ADMIN', 'KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'auth', ['login', 'logout']);
-  grant(['ADMIN', 'KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'auth', ['request_token', 'reset_password']);
+  // 1. WEWENANG GURU & PEGAWAI (Operasional Daily)
+  grant(roles, 'auth', ['login', 'logout', 'request_token', 'reset_password']);
+  grant(roles, 'profile', ['read', 'update']);
 
-  // ===== Profile (SKPL.F-004) =====
-  grant(['KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'profile', ['read', 'update']);
+  // Fitur inti Guru & Pegawai
+  grant(['GURU', 'PEGAWAI'], 'absensi', ['create', 'read', 'update']);
+  grant(['GURU', 'PEGAWAI'], 'wajah', ['create', 'read']);
+  grant(['GURU', 'PEGAWAI'], 'agenda', CRUD);
+  grant(['GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update']);
 
-  // ===== Wajah/Face (SKPL.F-005, F-014) =====
-  grant(['KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'wajah', ['read', 'update']); // kelola wajah
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'wajah', ['reset']); // reset wajah pengguna
+  // 2. WEWENANG ADMIN & KEPALA SEKOLAH (Manajerial)
+  const manajerial = ['ADMIN', 'KEPALA_SEKOLAH'];
 
-  // ===== Absensi (SKPL.F-006, F-011) =====
-  // semua user melakukan absensi (create/update/read)
-  grant(['KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'absensi', ['create', 'read', 'update']);
-  // manajemen absensi (admin + kepala sekolah) full CRUD
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'absensi', CRUD);
+  grant(manajerial, 'absensi', ['read']);
+  grant(manajerial, 'agenda', ['read']);
+  grant(manajerial, 'pengguna', CRUD);
+  grant(manajerial, 'wajah', ['read', 'delete']);
+  grant(manajerial, 'lokasi', CRUD);
+  grant(manajerial, 'pola_jam_kerja', CRUD);
+  grant(manajerial, 'profile_sekolah', CRUD);
+  grant(manajerial, 'izin', ['read', 'update']);
 
-  // ===== Agenda (SKPL.F-007, F-010 monitoring) =====
-  grant(['KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'agenda', CRUD);
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'agenda', ['monitor']); // monitoring agenda kerja & mengajar
-
-  // ===== Izin/Sakit/Cuti (SKPL.F-009, F-010 verifikasi) =====
-  // pengajuan oleh kepala sekolah/guru/pegawai
-  grant(['KEPALA_SEKOLAH', 'GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update']);
-  // admin+kepsek dapat kelola penuh & verifikasi
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'izin', CRUD);
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'izin', ['verify']);
-
-  // ===== Lokasi (SKPL.F-012) =====
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'lokasi', CRUD);
-
-  // ===== Pengguna/Pegawai (SKPL.F-013) =====
-  // Di project kamu menu admin masih pakai resource "pegawai", jadi kita seed itu juga.
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'pegawai', CRUD);
-  // Optional: alias "pengguna" kalau nanti kamu pakai resource baru
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'pengguna', CRUD);
-
-  // ===== Pola Jam Kerja (BARU) =====
-  // Admin + Kepala Sekolah bisa kelola pola jam kerja (CRUD)
-  grant(['ADMIN', 'KEPALA_SEKOLAH'], 'pola_jam_kerja', CRUD);
-  grant(['GURU'], 'pola_jam_kerja', 'read');
-
-  // ===== Admin superuser =====
-  // Pastikan ADMIN punya semua permission yang ada di matrix ini (sudah, tapi kita double-ensure)
+  // Superuser: ADMIN mendapatkan akses dari semua role
   for (const [roleName, set] of Object.entries(matrix)) {
     if (roleName === 'ADMIN') continue;
-    for (const p of set) matrix.ADMIN.add(p);
+    set.forEach((p) => matrix.ADMIN.add(p));
   }
 
   return matrix;
 }
 
 async function syncRolePermissions(role, desiredPermissionIds) {
-  // Hapus grant yang tidak ada di desired
+  // Hapus permission yang sudah tidak relevan
   await prisma.rolePermission.deleteMany({
     where: {
       id_role: role.id_role,
@@ -125,15 +135,10 @@ async function syncRolePermissions(role, desiredPermissionIds) {
     },
   });
 
-  // Upsert desired
+  // Tambahkan/Update permission baru
   for (const id_permission of desiredPermissionIds) {
     await prisma.rolePermission.upsert({
-      where: {
-        id_role_id_permission: {
-          id_role: role.id_role,
-          id_permission,
-        },
-      },
+      where: { id_role_id_permission: { id_role: role.id_role, id_permission } },
       update: {},
       create: { id_role: role.id_role, id_permission },
     });
@@ -148,19 +153,15 @@ async function upsertUserWithRole({ email, name, roleName, passwordHash }) {
       email,
       name,
       password_hash: passwordHash,
-      role: roleName, // opsional (bukan source of truth), tapi membantu
+      role: roleName,
     },
   });
 
   const role = await prisma.role.findUnique({ where: { name: roleName } });
   if (!role) throw new Error(`Role "${roleName}" tidak ditemukan`);
 
-  // Pastikan user hanya punya role ini (kalau kamu ingin multi-role, hapus block ini)
   await prisma.userRole.deleteMany({
-    where: {
-      id_user: user.id_user,
-      NOT: { id_role: role.id_role },
-    },
+    where: { id_user: user.id_user, NOT: { id_role: role.id_role } },
   });
 
   await prisma.userRole.upsert({
@@ -172,78 +173,53 @@ async function upsertUserWithRole({ email, name, roleName, passwordHash }) {
   return user;
 }
 
+// --- MAIN EXECUTION ---
+
 async function main() {
   const roleMatrix = buildRoleMatrix();
 
-  // 1) Pastikan roles ada
+  // 1. Setup Roles
   await upsertRole('ADMIN', 'Administrator sistem');
   await upsertRole('KEPALA_SEKOLAH', 'Kepala sekolah');
-  await upsertRole('GURU', 'Guru');
-  await upsertRole('PEGAWAI', 'Pegawai');
+  await upsertRole('GURU', 'Tenaga Pendidik');
+  await upsertRole('PEGAWAI', 'Tenaga Kependidikan');
 
-  // 2) Pastikan semua permission ada + map key -> permission
+  // 2. Setup Permissions & Role Bindings
   const allPermKeys = new Set();
-  for (const set of Object.values(roleMatrix)) {
-    for (const p of set) allPermKeys.add(p);
-  }
+  Object.values(roleMatrix).forEach((set) => set.forEach((p) => allPermKeys.add(p)));
 
-  const permMap = new Map(); // key -> Permission record
+  const permMap = new Map();
   for (const p of allPermKeys) {
     const [resource, action] = p.split(':');
     const perm = await upsertPermission(resource, action);
     permMap.set(p, perm);
   }
 
-  // 3) Sync role-permissions sesuai matrix (deterministic)
   for (const [roleName, keySet] of Object.entries(roleMatrix)) {
     const role = await prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) throw new Error(`Role "${roleName}" tidak ditemukan`);
-
-    const desiredIds = [];
-    for (const pkey of keySet) {
-      const perm = permMap.get(pkey);
-      if (perm) desiredIds.push(perm.id_permission);
-    }
-
+    const desiredIds = Array.from(keySet)
+      .map((pkey) => permMap.get(pkey)?.id_permission)
+      .filter(Boolean);
     await syncRolePermissions(role, desiredIds);
   }
 
-  // 4) Optional: seed users demo
-  const createUsers = process.env.SEED_CREATE_USERS !== 'false';
-  if (createUsers) {
+  // 3. Seed Users Default
+  if (process.env.SEED_CREATE_USERS !== 'false') {
     const seedPassword = process.env.SEED_PASSWORD || 'gemakencana';
     const passwordHash = await bcrypt.hash(seedPassword, 10);
 
-    await upsertUserWithRole({
-      email: 'admin.saraspatika@gmail.com',
-      name: 'Admin',
-      roleName: 'ADMIN',
-      passwordHash,
-    });
+    const usersToSeed = [
+      { email: 'admin.saraspatika@gmail.com', name: 'Admin Utama', role: 'ADMIN' },
+      { email: 'kepsek@example.com', name: 'Kepala Sekolah', role: 'KEPALA_SEKOLAH' },
+      { email: 'guru@example.com', name: 'Guru Contoh', role: 'GURU' },
+    ];
 
-    await upsertUserWithRole({
-      email: 'kepalasekolah@gmail.com',
-      name: 'Kepala Sekolah',
-      roleName: 'KEPALA_SEKOLAH',
-      passwordHash,
-    });
-
-    await upsertUserWithRole({
-      email: 'guru@example.com',
-      name: 'Guru',
-      roleName: 'GURU',
-      passwordHash,
-    });
-
-    await upsertUserWithRole({
-      email: 'pegawai@example.com',
-      name: 'Pegawai',
-      roleName: 'PEGAWAI',
-      passwordHash,
-    });
+    for (const u of usersToSeed) {
+      await upsertUserWithRole({ email: u.email, name: u.name, roleName: u.role, passwordHash });
+    }
   }
 
-  console.log('Seed RBAC (ADMIN/KEPALA_SEKOLAH/GURU/PEGAWAI) ✅');
+  console.log('Seed RBAC Berhasil ✅');
 }
 
 main()

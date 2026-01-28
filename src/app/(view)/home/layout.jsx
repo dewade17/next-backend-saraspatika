@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Layout, ConfigProvider } from 'antd';
-import { HomeOutlined, UserOutlined, ScheduleOutlined, SettingOutlined, MenuOutlined, LogoutOutlined } from '@ant-design/icons';
+import { HomeOutlined, UserOutlined, ScheduleOutlined, SettingOutlined, MenuOutlined, LogoutOutlined, AuditOutlined, BookOutlined, EnvironmentOutlined, DatabaseOutlined, FundProjectionScreenOutlined } from '@ant-design/icons';
 import { usePathname } from 'next/navigation';
 import { canFromClaims } from '@/lib/rbac_client.js';
 
@@ -27,41 +27,85 @@ const menuConfig = [
     label: 'Home',
     href: '/home/dashboard',
     icon: <HomeOutlined />,
+    // Admin/Kepsek punya absensi:read, Guru/Pegawai punya absensi:read. Aman.
     permission: { resource: 'absensi', action: 'read' },
   },
   {
     key: 'absensi',
     label: 'Manajemen Absensi',
-    icon: <UserOutlined />,
+    icon: <FundProjectionScreenOutlined />,
     children: [
       {
-        key: 'absensi-karyawan',
-        label: 'Karyawan',
-        href: '/home/absensi-karyawan',
+        key: 'absensi-guru',
+        label: 'Absensi Guru',
+        href: '/home/absensi-guru',
+        permission: { resource: 'absensi', action: 'read' },
+      },
+      {
+        key: 'absensi-pegawai',
+        label: 'Absensi Pegawai',
+        href: '/home/absensi-pegawai',
         permission: { resource: 'absensi', action: 'read' },
       },
     ],
   },
   {
-    key: 'pegawai',
-    label: 'Manajemen Pegawai',
-    href: '/home/pegawai',
-    icon: <UserOutlined />,
-    permission: { resource: 'pegawai', action: 'read' },
-  },
-  {
     key: 'verifikasi',
     label: 'Verifikasi Izin',
-    href: '/home/verifikasi-karyawan',
+    href: '/home/verifikasi-izin',
     icon: <ScheduleOutlined />,
+    // Admin/Kepsek punya izin:update. Guru/Pegawai Cuma create/read.
+    // Jadi menu ini HANYA muncul untuk Admin/Kepsek. TEPAT.
     permission: { resource: 'izin', action: 'update' },
+  },
+  {
+    key: 'agenda kerja',
+    label: 'Agenda Kerja',
+    href: '/home/agenda-kerja',
+    icon: <AuditOutlined />,
+    // PERBAIKAN: Resource disesuaikan dengan seed 'agenda'
+    permission: { resource: 'agenda', action: 'read' },
+  },
+  {
+    key: 'agenda mengajar',
+    label: 'Agenda mengajar',
+    href: '/home/agenda-mengajar',
+    icon: <BookOutlined />,
+    // PERBAIKAN: Resource disesuaikan dengan seed 'agenda'
+    permission: { resource: 'agenda', action: 'read' },
+  },
+  {
+    key: 'profile sekolah',
+    label: 'Profile Sekolah',
+    href: '/home/profile-sekolah',
+    icon: <DatabaseOutlined />,
+    // PERBAIKAN: Resource disesuaikan dengan seed 'profile_sekolah'
+    permission: { resource: 'profile_sekolah', action: 'read' },
   },
   {
     key: 'pengguna',
     label: 'Manajemen Pengguna',
     href: '/home/manajemen-pengguna',
     icon: <SettingOutlined />,
-    permission: { resource: 'pegawai', action: 'delete' },
+    // PERBAIKAN: Resource disesuaikan dengan seed 'pengguna'
+    permission: { resource: 'pengguna', action: 'read' },
+  },
+  {
+    key: 'manajemen-lokasi',
+    label: 'Manajemen Lokasi',
+    href: '/home/manajemen-lokasi',
+    icon: <EnvironmentOutlined />,
+    // PERBAIKAN: Gunakan resource 'lokasi' agar lebih spesifik
+    permission: { resource: 'lokasi', action: 'read' },
+  },
+  {
+    key: 'reset-face',
+    label: 'Reset Face',
+    href: '/home/reset-face',
+    icon: <UserOutlined />,
+    // PERBAIKAN: Gunakan resource 'wajah' dengan action 'delete'
+    // karena di seed: grant(manajerial, 'wajah', ['read', 'delete']);
+    permission: { resource: 'wajah', action: 'delete' },
   },
 ];
 
