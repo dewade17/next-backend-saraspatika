@@ -15,25 +15,33 @@ async function requirePerm(resource, action) {
   const token = (await cookies()).get('access_token')?.value;
   if (!token) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
-  const payload = await verifyAccessToken(token);
-  const id = payload?.sub;
-  if (!id) throw unauthorized('Unauthorized', { code: 'unauthorized' });
+  let payload;
+  try {
+    payload = await verifyAccessToken(token);
+  } catch (err) {
+    throw unauthorized('Token tidak valid', { code: 'token_invalid', cause: err });
+  }
+
+  const id_user = String(payload?.sub || '').trim();
+  if (!id_user) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
   const perms = payload?.perms || [];
   let allowed = canFromClaims(perms, resource, action);
+
   if (!allowed) {
-    const set = await getPermSet(id);
+    const set = await getPermSet(id_user);
     allowed = set.has(`${String(resource).toLowerCase()}:${String(action).toLowerCase()}`);
   }
+
   if (!allowed) throw forbidden('Forbidden', { code: 'forbidden' });
 
-  return { id };
+  return { id_user };
 }
 
 export const GET = apiRoute(async (_req, ctx) => {
-  await requirePerm('pegawai', 'read');
+  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna'
+  await requirePerm('pengguna', 'read');
 
-  // Unwrapping params dengan await
   const params = await ctx.params;
   const id = params?.id;
 
@@ -48,14 +56,13 @@ export const GET = apiRoute(async (_req, ctx) => {
 });
 
 export const PATCH = apiRoute(async (req, ctx) => {
-  await requirePerm('pegawai', 'update');
+  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna'
+  await requirePerm('pengguna', 'update');
 
-  // Unwrapping params dengan await
   const params = await ctx.params;
   const id = params?.id;
 
   const input = await parseUserRequest(req, userUpdateValidation);
-
   const user = await updateUserService(id, input);
 
   return NextResponse.json(
@@ -67,9 +74,9 @@ export const PATCH = apiRoute(async (req, ctx) => {
 });
 
 export const DELETE = apiRoute(async (_req, ctx) => {
-  await requirePerm('pegawai', 'delete');
+  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna'
+  await requirePerm('pengguna', 'delete');
 
-  // Unwrapping params dengan await
   const params = await ctx.params;
   const id = params?.id;
 

@@ -4,7 +4,7 @@ import { apiRoute } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
-import { getPermissionMatrix, updatePermission } from '@/services/permissions/permissions_service.js';
+import { getUserPermissionMatrix, updateUserPermissionOverrides } from '@/services/permissions/permissions_service.js';
 
 export const runtime = 'nodejs';
 
@@ -35,10 +35,13 @@ async function requirePerm(resource, action) {
   return { id_user };
 }
 
-export const GET = apiRoute(async () => {
+export const GET = apiRoute(async (req) => {
   await requirePerm('pengguna', 'read');
 
-  const data = await getPermissionMatrix();
+  const url = new URL(req.url);
+  const userId = url.searchParams.get('userId');
+
+  const data = userId ? await getUserPermissionMatrix(userId) : null;
 
   return NextResponse.json(
     { data },
@@ -52,7 +55,7 @@ export const PUT = apiRoute(async (req) => {
   await requirePerm('pengguna', 'update');
 
   const body = await req.json();
-  const result = await updatePermission(body?.roleId, body?.permissions);
+  const result = await updateUserPermissionOverrides(body?.userId, body?.permissions);
 
   return NextResponse.json(
     { ok: true, data: result },
@@ -61,3 +64,76 @@ export const PUT = apiRoute(async (req) => {
     },
   );
 });
+
+export async function findUserRolesWithPermissions(id_user) {
+  return await prisma.userRole.findMany({
+    where: { id_user },
+    select: {
+      role: {
+        select: {
+          id_role: true,
+          name: true,
+          role_permissions: {
+            select: {
+              permission: {
+                select: {
+                  id_permission: true,
+                  resource: true,
+                  action: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function findUserPermissionOverrides(id_user) {
+  return await prisma.userPermissionOverride.findMany({
+    where: { id_user },
+    select: {
+      id_permission: true,
+      grant: true,
+    },
+  });
+}
+
+export async function replaceUserPermissionOverrides(id_user, overrides) {
+  return await prisma.$transaction(async (tx) => {
+    if (!Array.isArray(overrides) || overrides.length === 0) {
+      await tx.userPermissionOverride.deleteMany({ where: { id_user } });
+      return;
+    }
+
+    const ids = overrides.map((override) => override.id_permission);
+    await tx.userPermissionOverride.deleteMany({
+      where: {
+        id_user,
+        NOT: {
+          id_permission: { in: ids },
+        },
+      },
+    });
+
+    await Promise.all(
+      overrides.map((override) =>
+        tx.userPermissionOverride.upsert({
+          where: {
+            id_user_id_permission: {
+              id_user,
+              id_permission: override.id_permission,
+            },
+          },
+          update: { grant: override.grant },
+          create: {
+            id_user,
+            id_permission: override.id_permission,
+            grant: override.grant,
+          },
+        }),
+      ),
+    );
+  });
+}

@@ -1,6 +1,7 @@
 import { badRequest } from '@/lib/error.js';
 import { clearPermCache } from '@/lib/rbac_server.js';
-import { findAllPermissions, findAllRolesWithPermissions, updateRolePermissions } from '@/repositories/permissions/permissions_repo.js';
+import { getUserById } from '@/repositories/users/user_repo.js';
+import { findAllPermissions, findAllRolesWithPermissions, findUserPermissionOverrides, findUserRolesWithPermissions, replaceUserPermissionOverrides, updateRolePermissions } from '@/repositories/permissions/permissions_repo.js';
 
 function norm(v) {
   return String(v ?? '')
@@ -104,6 +105,119 @@ export async function updatePermission(roleId, permissions) {
     clearPermCache();
 
     return { id_role, count: desiredIds.length };
+  } catch (err) {
+    throw err;
+  }
+}
+
+function normalizePermissionOverrides(overrides) {
+  if (!Array.isArray(overrides)) return [];
+
+  const map = new Map();
+  for (const override of overrides) {
+    const id_permission = String(override?.id_permission ?? override?.id ?? '').trim();
+    if (!id_permission) continue;
+    map.set(id_permission, { id_permission, grant: Boolean(override?.grant) });
+  }
+  return Array.from(map.values());
+}
+
+export async function getUserPermissionMatrix(userId) {
+  try {
+    const id_user = String(userId || '').trim();
+    if (!id_user) throw badRequest('User tidak valid', { code: 'user_invalid' });
+
+    const user = await getUserById(id_user);
+    if (!user) throw badRequest('User tidak ditemukan', { code: 'user_not_found', status: 404 });
+
+    const [userRoles, permissions, overrides] = await Promise.all([findUserRolesWithPermissions(id_user), findAllPermissions(), findUserPermissionOverrides(id_user)]);
+
+    const rolePermissionIds = new Set();
+    const roleList = [];
+    for (const entry of userRoles) {
+      const role = entry?.role;
+      if (!role) continue;
+      roleList.push({
+        id_role: role.id_role,
+        name: role.name,
+      });
+      for (const rp of role.role_permissions || []) {
+        const perm = rp?.permission;
+        if (perm?.id_permission) rolePermissionIds.add(perm.id_permission);
+      }
+    }
+
+    const overrideMap = new Map();
+    for (const override of overrides) {
+      if (!override?.id_permission) continue;
+      overrideMap.set(override.id_permission, Boolean(override.grant));
+    }
+
+    const resourceMap = new Map();
+    for (const perm of permissions) {
+      const resource = norm(perm.resource);
+      const action = norm(perm.action);
+      const baseGranted = rolePermissionIds.has(perm.id_permission);
+      const overrideValue = overrideMap.has(perm.id_permission) ? overrideMap.get(perm.id_permission) : null;
+
+      const entry = resourceMap.get(resource) || { resource, actions: [] };
+      entry.actions.push({
+        id_permission: perm.id_permission,
+        action,
+        granted: overrideValue === null ? baseGranted : overrideValue,
+        fromRole: baseGranted,
+        override: overrideValue === null ? null : { grant: overrideValue },
+      });
+      resourceMap.set(resource, entry);
+    }
+
+    const resources = Array.from(resourceMap.values()).map((entry) => ({
+      resource: entry.resource,
+      actions: entry.actions.sort(sortActions),
+    }));
+
+    resources.sort((a, b) => a.resource.localeCompare(b.resource));
+
+    return {
+      user: {
+        id_user: user.id_user,
+        name: user.name,
+        email: user.email,
+      },
+      roles: roleList,
+      resources,
+    };
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function updateUserPermissionOverrides(userId, permissions) {
+  try {
+    const id_user = String(userId || '').trim();
+    if (!id_user) throw badRequest('User tidak valid', { code: 'user_invalid' });
+
+    const user = await getUserById(id_user);
+    if (!user) throw badRequest('User tidak ditemukan', { code: 'user_not_found', status: 404 });
+
+    if (!Array.isArray(permissions)) {
+      throw badRequest('Permissions harus berupa array', { code: 'permissions_invalid' });
+    }
+
+    const overrides = normalizePermissionOverrides(permissions);
+
+    const existingPerms = await findAllPermissions();
+    const existingIds = new Set(existingPerms.map((perm) => perm.id_permission));
+    const unknownIds = overrides.map((override) => override.id_permission).filter((id) => !existingIds.has(id));
+
+    if (unknownIds.length > 0) {
+      throw badRequest('Terdapat permission tidak dikenal', { code: 'permission_unknown', errors: { ids: unknownIds } });
+    }
+
+    await replaceUserPermissionOverrides(id_user, overrides);
+    clearPermCache(id_user);
+
+    return { id_user, count: overrides.length };
   } catch (err) {
     throw err;
   }

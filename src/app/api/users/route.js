@@ -39,7 +39,8 @@ async function requirePerm(resource, action) {
 }
 
 export const GET = apiRoute(async (req) => {
-  await requirePerm('pegawai', 'read');
+  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna' sesuai seed.js
+  await requirePerm('pengguna', 'read');
 
   const url = new URL(req.url);
   const q = url.searchParams.get('q') || '';
@@ -55,7 +56,8 @@ export const GET = apiRoute(async (req) => {
 });
 
 export const POST = apiRoute(async (req) => {
-  await requirePerm('pegawai', 'create');
+  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna' sesuai seed.js
+  await requirePerm('pengguna', 'create');
 
   const input = await parseUserRequest(req, userCreateValidation);
   const user = await createUserService(input);
