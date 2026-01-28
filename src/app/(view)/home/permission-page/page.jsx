@@ -1,92 +1,171 @@
 'use client';
 
 import React from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Checkbox } from 'antd';
 
+import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
-import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
+import { AppFlex } from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
+import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
+import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import { useAppMessage } from '@/app/(view)/components_shared/AppMessage.jsx';
-import { createHttpClient } from '@/lib/http_client.js';
+import { usePermissionMatrix } from './_hooks/usePermisssionMatrix.js';
+
+function titleize(value) {
+  return String(value || '')
+    .trim()
+    .replace(/_/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function formatRoleLabel(name) {
+  return titleize(name);
+}
 
 export default function PermissionPage() {
-  const searchParams = useSearchParams();
   const message = useAppMessage();
-  const client = React.useMemo(() => createHttpClient(), []);
+  const { matrix, isLoading, fetchMatrix, updateRolePermission } = usePermissionMatrix();
 
-  const userId = searchParams.get('userId') || '';
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [draftMatrix, setDraftMatrix] = React.useState(new Map());
 
-  const [loading, setLoading] = React.useState(false);
-  const [user, setUser] = React.useState(null);
-
-  const fetchUser = React.useCallback(async () => {
-    if (!userId) {
-      setUser(null);
-      return;
+  const rows = React.useMemo(() => {
+    const output = [];
+    for (const resource of matrix.resources || []) {
+      const resourceLabel = titleize(resource.resource);
+      for (const action of resource.actions || []) {
+        output.push({
+          key: action.id_permission,
+          id_permission: action.id_permission,
+          resource: resource.resource,
+          action: action.action,
+          label: `${resourceLabel} - ${titleize(action.action)}`,
+        });
+      }
     }
-
-    setLoading(true);
-    try {
-      const res = await client.get(`/api/users/${encodeURIComponent(userId)}`, { cache: 'no-store' });
-      setUser(res?.user ?? null);
-    } catch (err) {
-      message.errorFrom(err, { fallback: 'Gagal memuat detail pengguna' });
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [client, message, userId]);
+    return output;
+  }, [matrix]);
 
   React.useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    const next = new Map();
+    for (const role of matrix.roles || []) {
+      const set = new Set();
+      for (const resource of matrix.resources || []) {
+        for (const action of resource.actions || []) {
+          if (action?.roles?.[role.id_role]) set.add(action.id_permission);
+        }
+      }
+      next.set(role.id_role, set);
+    }
+    setDraftMatrix(next);
+  }, [matrix]);
+
+  const handleToggle = React.useCallback((roleId, permissionId, checked) => {
+    setDraftMatrix((prev) => {
+      const next = new Map(prev);
+      const set = new Set(next.get(roleId) || []);
+      if (checked) set.add(permissionId);
+      else set.delete(permissionId);
+      next.set(roleId, set);
+      return next;
+    });
+  }, []);
+
+  const handleSave = React.useCallback(async () => {
+    if (!matrix.roles?.length) return;
+    setIsSaving(true);
+    try {
+      for (const role of matrix.roles) {
+        const ids = Array.from(draftMatrix.get(role.id_role) || []);
+        await updateRolePermission(role.id_role, ids);
+      }
+      message.success('Permission berhasil disimpan');
+      await fetchMatrix();
+    } catch (err) {
+      // error handled in hook
+    } finally {
+      setIsSaving(false);
+    }
+  }, [draftMatrix, fetchMatrix, matrix.roles, message, updateRolePermission]);
+
+  const columns = React.useMemo(() => {
+    const roleColumns = (matrix.roles || []).map((role) => ({
+      title: formatRoleLabel(role.name),
+      key: role.id_role,
+      align: 'center',
+      render: (_value, record) => (
+        <Checkbox
+          checked={draftMatrix.get(role.id_role)?.has(record.id_permission) || false}
+          onChange={(e) => handleToggle(role.id_role, record.id_permission, e.target.checked)}
+        />
+      ),
+    }));
+
+    return [
+      {
+        title: 'Resource - Action',
+        dataIndex: 'label',
+        key: 'label',
+        fixed: 'left',
+        width: 240,
+      },
+      ...roleColumns,
+    ];
+  }, [draftMatrix, handleToggle, matrix.roles]);
 
   return (
     <div style={{ width: '100%' }}>
-      <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto', padding: 16 }}>
         <AppCard
           bordered
           style={{ borderRadius: 10 }}
         >
-          <AppTypography
-            as='title'
-            level={4}
-            style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}
+          <AppFlex
+            align='center'
+            justify='space-between'
+            wrap
+            gap='sm'
+            style={{ marginBottom: 12 }}
           >
-            Pengaturan Permission
-          </AppTypography>
+            <AppTypography
+              as='title'
+              level={4}
+              style={{ margin: 0, fontWeight: 700 }}
+            >
+              Manajemen Permission Matrix
+            </AppTypography>
+            <AppButton
+              type='primary'
+              onClick={handleSave}
+              loading={isSaving}
+              disabled={isLoading || isSaving || rows.length === 0}
+            >
+              Simpan Perubahan
+            </AppButton>
+          </AppFlex>
 
-          {!userId ? (
-            <AppTypography
-              as='text'
-              tone='secondary'
-            >
-              Pilih pengguna dari halaman Manajemen Pengguna untuk mengatur permission per user.
-            </AppTypography>
-          ) : loading ? (
+          {isLoading && rows.length === 0 ? (
             <AppSkeleton active />
-          ) : user ? (
-            <>
-              <AppTypography
-                as='text'
-                style={{ display: 'block', marginBottom: 8 }}
-              >
-                <span style={{ fontWeight: 700 }}>User</span> : {user?.name} ({user?.email})
-              </AppTypography>
-              <AppTypography
-                as='text'
-                tone='secondary'
-              >
-                Halaman ini masih placeholder. Nanti bisa diisi UI untuk pengaturan role/permission khusus untuk user ini.
-              </AppTypography>
-            </>
-          ) : (
+          ) : rows.length === 0 ? (
             <AppTypography
               as='text'
               tone='secondary'
             >
-              Pengguna tidak ditemukan atau Anda tidak memiliki akses untuk melihatnya.
+              Tidak ada permission yang tersedia.
             </AppTypography>
+          ) : (
+            <AppTable
+              columns={columns}
+              dataSource={rows}
+              rowKey='id_permission'
+              pagination={false}
+              size='middle'
+              scroll={{ x: 'max-content' }}
+            />
           )}
         </AppCard>
       </div>
