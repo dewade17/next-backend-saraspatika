@@ -118,8 +118,8 @@ model UserPermissionOverride {
 model PolaJamKerja {
   id_pola_kerja     String   @id @default(uuid())
   nama_pola_kerja   String   @unique
-  jam_mulai_kerja   String
-  jam_selesai_kerja String
+  jam_mulai_kerja   DateTime @db.Time
+  jam_selesai_kerja DateTime @db.Time
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 

@@ -10,9 +10,10 @@ import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppSpace from '@/app/(view)/components_shared/AppSpace.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
-
+import PolaKerjaFormModal from './_components/PolaKerjaFormModal';
 import { useFetchPolaKerja } from './_hooks/useFetchPolaKerja';
 import { useDeletePolaKerja } from './_hooks/useDeletePolaKerja';
+import { useSubmitPolaKerja } from './_hooks/useSubmitPolaKerja';
 
 export default function ManajemenPolaKerjaPage() {
   const screens = Grid.useBreakpoint();
@@ -25,16 +26,11 @@ export default function ManajemenPolaKerjaPage() {
     onSuccess: fetchPolaKerja,
   });
 
-  const handleCreate = React.useCallback(() => {
-    message.info('Aksi: Tambah Pola Kerja (dummy).');
-  }, [message]);
-
-  const handleEdit = React.useCallback(
-    (record) => {
-      message.info(`Aksi: Edit "${record?.nama_pola_kerja}" (dummy).`);
-    },
-    [message],
-  );
+  const { isOpen, setIsOpen, mode, activePolaKerja, openCreate, openEdit, handleSubmit, submitting } = useSubmitPolaKerja({
+    client,
+    message,
+    onSuccess: fetchPolaKerja,
+  });
 
   const columns = React.useMemo(
     () => [
@@ -68,6 +64,20 @@ export default function ManajemenPolaKerjaPage() {
         ),
       },
       {
+        title: 'Jam Selesai',
+        dataIndex: 'jam_selesai_kerja',
+        key: 'jam_selesai_kerja',
+        width: 160,
+        render: (v) => (
+          <AppTypography
+            as='text'
+            tone='secondary'
+          >
+            {v || '-'}
+          </AppTypography>
+        ),
+      },
+      {
         title: 'Actions',
         key: 'actions',
         width: 170,
@@ -81,7 +91,7 @@ export default function ManajemenPolaKerjaPage() {
             <AppButton
               type='link'
               icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
+              onClick={() => openEdit(record)}
             >
               Edit
             </AppButton>
@@ -108,7 +118,7 @@ export default function ManajemenPolaKerjaPage() {
         ),
       },
     ],
-    [deletingId, handleDelete, handleEdit],
+    [deletingId, handleDelete, openEdit],
   );
 
   return (
@@ -145,7 +155,7 @@ export default function ManajemenPolaKerjaPage() {
             <AppButton
               type='primary'
               icon={<PlusOutlined />}
-              onClick={handleCreate}
+              onClick={openCreate}
             >
               Tambah Pola Kerja
             </AppButton>
@@ -174,6 +184,14 @@ export default function ManajemenPolaKerjaPage() {
           </AppCard>
         </AppSpace>
       </div>
+      <PolaKerjaFormModal
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        mode={mode}
+        initialValues={activePolaKerja}
+        onSubmit={handleSubmit}
+        isSubmitting={submitting}
+      />
     </div>
   );
 }
