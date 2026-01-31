@@ -316,12 +316,16 @@ const AppTimePicker = React.forwardRef(function AppTimePicker(
   );
 
   const finalAllowClear = rest.allowClear !== false;
-
+  // Cari fungsi handleChange di dalam AppTimePicker (sekitar baris 315)
   const handleChange = (next, timeString) => {
-    if (typeof onChange === 'function') onChange(next, timeString);
+    // 1. Buat nilai output berdasarkan valueType (misal: 'string')
+    const out = convertOutput(next, { valueType, valueFormat: outFmt });
+
+    // 2. Kirim 'out' (string) ke onChange, bukan 'next' (dayjs object)
+    // Ini yang akan ditangkap oleh Antd Form
+    if (typeof onChange === 'function') onChange(out, timeString);
 
     if (typeof onValueChange === 'function') {
-      const out = convertOutput(next, { valueType, valueFormat: outFmt });
       onValueChange(out, {
         dayjsValue: next,
         timeString,
@@ -439,17 +443,28 @@ export const AppTimeRangePicker = React.forwardRef(function AppTimeRangePicker(
 
   const finalAllowClear = rest.allowClear !== false;
 
-  const handleChange = (nextRange, timeStrings) => {
-    if (typeof onChange === 'function') onChange(nextRange, timeStrings);
+  // Cari fungsi handleChange di dalam AppTimePicker (sekitar baris 315)
+  const handleChange = (next, timeString) => {
+    // 1. Buat nilai output berdasarkan valueType (misal: 'string')
+    const out = convertOutput(next, { valueType, valueFormat: outFmt });
+
+    // 2. Kirim 'out' (string) ke onChange, bukan 'next' (dayjs object)
+    // Ini yang akan ditangkap oleh Antd Form
+    if (typeof onChange === 'function') onChange(out, timeString);
 
     if (typeof onValueChange === 'function') {
-      const out = convertRangeOutput(nextRange, { valueType, valueFormat: outFmt });
       onValueChange(out, {
-        dayjsValue: nextRange,
-        timeStrings,
+        dayjsValue: next,
+        timeString,
         valueType,
         valueFormat: outFmt,
       });
+    }
+
+    if (autoFeedback && feedback) {
+      const cfg = feedback === true ? {} : feedback;
+      const successMsg = typeof cfg === 'object' ? cfg.success : undefined;
+      if (successMsg) message.success(successMsg);
     }
   };
 

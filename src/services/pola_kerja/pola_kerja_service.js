@@ -1,16 +1,80 @@
 import { badRequest, conflict } from '@/lib/error.js';
 import { createPolaKerja, deletePolaKerja, findPolaKerjaById, findPolaKerjaByName, listPolaKerja, updatePolaKerja } from '@/repositories/pola_kerja/pola_kerja_repo.js';
 
+const timePattern = /^\d{2}:\d{2}(:\d{2})?$/;
+
 function normalizeName(nama_pola_kerja) {
   return String(nama_pola_kerja || '').trim();
 }
 
-function normalizeJam(jam) {
-  return String(jam || '').trim();
+function toTimeDate(value) {
+  if (value == null) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (timePattern.test(trimmed)) {
+      const [hh, mm, ss = '0'] = trimmed.split(':');
+      const hour = Number.parseInt(hh, 10);
+      const minute = Number.parseInt(mm, 10);
+      const second = Number.parseInt(ss, 10);
+      if ([hour, minute, second].some((n) => Number.isNaN(n))) return null;
+      return new Date(Date.UTC(1970, 0, 1, hour, minute, second));
+    }
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  return null;
+}
+
+function formatTimeValue(value) {
+  if (value == null) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString().slice(11, 16);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (timePattern.test(trimmed)) return trimmed.slice(0, 5);
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(11, 16);
+  }
+
+  if (typeof value === 'number') {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(11, 16);
+  }
+
+  return null;
+}
+
+function serializePolaKerja(data) {
+  if (!data) return data;
+  return {
+    ...data,
+    jam_mulai_kerja: formatTimeValue(data.jam_mulai_kerja),
+    jam_selesai_kerja: formatTimeValue(data.jam_selesai_kerja),
+  };
 }
 
 export async function listPolaKerjaService() {
-  return await listPolaKerja();
+  const rows = await listPolaKerja();
+  return Array.isArray(rows) ? rows.map((row) => serializePolaKerja(row)) : [];
 }
 
 export async function getPolaKerjaByIdService(id_pola_kerja) {
@@ -19,17 +83,17 @@ export async function getPolaKerjaByIdService(id_pola_kerja) {
 
   const data = await findPolaKerjaById(id);
   if (!data) throw badRequest('Pola kerja tidak ditemukan', { code: 'pola_kerja_not_found', status: 404 });
-  return data;
+  return serializePolaKerja(data);
 }
 
 export async function createPolaKerjaService(input) {
   const nama_pola_kerja = normalizeName(input?.nama_pola_kerja);
   if (!nama_pola_kerja) throw badRequest('Nama pola kerja wajib diisi', { code: 'nama_pola_kerja_required' });
 
-  const jam_mulai_kerja = normalizeJam(input?.jam_mulai_kerja);
+  const jam_mulai_kerja = toTimeDate(input?.jam_mulai_kerja);
   if (!jam_mulai_kerja) throw badRequest('Jam mulai kerja wajib diisi', { code: 'jam_mulai_kerja_required' });
 
-  const jam_selesai_kerja = normalizeJam(input?.jam_selesai_kerja);
+  const jam_selesai_kerja = toTimeDate(input?.jam_selesai_kerja);
   if (!jam_selesai_kerja) throw badRequest('Jam selesai kerja wajib diisi', { code: 'jam_selesai_kerja_required' });
 
   const existing = await findPolaKerjaByName(nama_pola_kerja);
@@ -40,11 +104,12 @@ export async function createPolaKerjaService(input) {
     });
   }
 
-  return await createPolaKerja({
+  const created = await createPolaKerja({
     nama_pola_kerja,
     jam_mulai_kerja,
     jam_selesai_kerja,
   });
+  return serializePolaKerja(created);
 }
 
 export async function updatePolaKerjaService(id_pola_kerja, input) {
@@ -58,11 +123,11 @@ export async function updatePolaKerjaService(id_pola_kerja, input) {
   }
 
   if (input?.jam_mulai_kerja !== undefined) {
-    data.jam_mulai_kerja = normalizeJam(input?.jam_mulai_kerja);
+    data.jam_mulai_kerja = toTimeDate(input?.jam_mulai_kerja);
   }
 
   if (input?.jam_selesai_kerja !== undefined) {
-    data.jam_selesai_kerja = normalizeJam(input?.jam_selesai_kerja);
+    data.jam_selesai_kerja = toTimeDate(input?.jam_selesai_kerja);
   }
 
   if (Object.keys(data).length === 0) {
@@ -79,7 +144,8 @@ export async function updatePolaKerjaService(id_pola_kerja, input) {
     }
   }
 
-  return await updatePolaKerja(id, data);
+  const updated = await updatePolaKerja(id, data);
+  return serializePolaKerja(updated);
 }
 
 export async function deletePolaKerjaService(id_pola_kerja) {

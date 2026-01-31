@@ -7,6 +7,7 @@ import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
+import AppTimePicker from '@/app/(view)/components_shared/AppTimePicker.jsx';
 
 export default function PolaKerjaFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSubmitting }) {
   const [form] = Form.useForm();
@@ -61,14 +62,26 @@ export default function PolaKerjaFormModal({ open, onOpenChange, mode, initialVa
             name='jam_mulai_kerja'
             rules={[{ required: true, message: 'Jam mulai wajib diisi' }]}
           >
-            <AppInput placeholder='Contoh: 08:00' />
+            <AppTimePicker
+              placeholder='Pilih jam mulai'
+              valueType='string'
+              valueFormat='HH:mm'
+              inputFormat='HH:mm'
+              allowClear={false}
+            />
           </AppForm.Item>
           <AppForm.Item
             label='Jam Selesai'
             name='jam_selesai_kerja'
             rules={[{ required: true, message: 'Jam selesai wajib diisi' }]}
           >
-            <AppInput placeholder='Contoh: 16:00' />
+            <AppTimePicker
+              placeholder='Pilih jam selesai'
+              valueType='string'
+              valueFormat='HH:mm'
+              inputFormat='HH:mm'
+              allowClear={false}
+            />
           </AppForm.Item>
         </AppGrid>
 
