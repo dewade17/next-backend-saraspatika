@@ -3,7 +3,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Layout, ConfigProvider } from 'antd';
-import { HomeOutlined, UserOutlined, ScheduleOutlined, SettingOutlined, MenuOutlined, LogoutOutlined, AuditOutlined, BookOutlined, EnvironmentOutlined, DatabaseOutlined, FundProjectionScreenOutlined } from '@ant-design/icons';
+import {
+  HomeOutlined,
+  UserOutlined,
+  ScheduleOutlined,
+  SettingOutlined,
+  MenuOutlined,
+  LogoutOutlined,
+  AuditOutlined,
+  BookOutlined,
+  EnvironmentOutlined,
+  DatabaseOutlined,
+  FundProjectionScreenOutlined,
+  ContainerOutlined,
+  FieldTimeOutlined,
+} from '@ant-design/icons';
 import { usePathname } from 'next/navigation';
 import { canFromClaims } from '@/lib/rbac_client.js';
 
@@ -57,6 +71,20 @@ const menuConfig = [
     // Admin/Kepsek punya izin:update. Guru/Pegawai Cuma create/read.
     // Jadi menu ini HANYA muncul untuk Admin/Kepsek. TEPAT.
     permission: { resource: 'izin', action: 'update' },
+  },
+  {
+    key: 'pola jam kerja',
+    label: 'Pola Jam Kerja',
+    href: '/home/manajemen-pola-kerja',
+    icon: <FieldTimeOutlined />,
+    permission: { resource: 'pola_jam_kerja', action: 'read' },
+  },
+  {
+    key: 'shift kerja',
+    label: 'Shift Kerja',
+    href: '/home/manajemen-shift-kerja',
+    icon: <ContainerOutlined />,
+    permission: { resource: 'shift_kerja', action: 'read' },
   },
   {
     key: 'agenda kerja',
@@ -232,6 +260,8 @@ function AdminDashboardShell({ children }) {
               left: 0,
               zIndex: 1000,
               boxShadow: '2px 0 8px rgba(0,0,0,0.05)',
+              overflowY: 'auto', // Mengaktifkan scroll vertikal
+              paddingBottom: '48px',
             }}
             width={240}
           >

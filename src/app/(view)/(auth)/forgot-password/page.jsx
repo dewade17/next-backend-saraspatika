@@ -16,7 +16,7 @@ const { Content } = Layout;
 export default function ForgotPasswordPage() {
   const screens = Grid.useBreakpoint();
   const isMdUp = !!screens?.md;
-  const [form] = AppForm.useForm();
+  const form = AppForm.useForm();
 
   const { step, isSubmitting, cooldown, onFinish, onResend, onBackToEmail } = useForgotPassword(form);
 

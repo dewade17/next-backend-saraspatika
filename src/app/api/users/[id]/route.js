@@ -11,8 +11,18 @@ import { parseUserRequest } from '@/app/api/users/helpers.js';
 
 export const runtime = 'nodejs';
 
-async function requirePerm(resource, action) {
-  const token = (await cookies()).get('access_token')?.value;
+async function requirePerm(req, resource, action) {
+  const authHeader = req.headers.get('Authorization');
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+
+  if (!token) {
+    token = (await cookies()).get('access_token')?.value;
+  }
+
   if (!token) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
   let payload;
@@ -38,9 +48,8 @@ async function requirePerm(resource, action) {
   return { id_user };
 }
 
-export const GET = apiRoute(async (_req, ctx) => {
-  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna'
-  await requirePerm('pengguna', 'read');
+export const GET = apiRoute(async (req, ctx) => {
+  await requirePerm(req, 'pengguna', 'read');
 
   const params = await ctx.params;
   const id = params?.id;
@@ -56,8 +65,7 @@ export const GET = apiRoute(async (_req, ctx) => {
 });
 
 export const PATCH = apiRoute(async (req, ctx) => {
-  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna'
-  await requirePerm('pengguna', 'update');
+  await requirePerm(req, 'pengguna', 'update');
 
   const params = await ctx.params;
   const id = params?.id;
@@ -73,9 +81,8 @@ export const PATCH = apiRoute(async (req, ctx) => {
   );
 });
 
-export const DELETE = apiRoute(async (_req, ctx) => {
-  // PERBAIKAN: Mengubah 'pegawai' menjadi 'pengguna'
-  await requirePerm('pengguna', 'delete');
+export const DELETE = apiRoute(async (req, ctx) => {
+  await requirePerm(req, 'pengguna', 'delete');
 
   const params = await ctx.params;
   const id = params?.id;

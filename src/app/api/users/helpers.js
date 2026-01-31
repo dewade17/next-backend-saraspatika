@@ -53,7 +53,7 @@ export async function parseUserRequest(req, schema) {
     }
 
     // Upload file kalau ada
-    const file = form.get('foto_profil') || form.get('foto_profile');
+    const file = form.get('foto_profil') || form.get('foto_profile') || form.get('foto_profil_url');
 
     // Kalau user memang mengirim file, dan upload gagal → throw (biar API tidak 200 palsu)
     const fotoUrl = await uploadFotoProfilOrThrow(file);

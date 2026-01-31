@@ -97,13 +97,15 @@ function buildRoleMatrix() {
 
   // 1. WEWENANG GURU & PEGAWAI (Operasional Daily)
   grant(roles, 'auth', ['login', 'logout', 'request_token', 'reset_password']);
-  grant(roles, 'profile', ['read', 'update']);
+  // MENGUBAH 'profile' MENJADI 'pengguna'
+  grant(roles, 'pengguna', ['read', 'update']);
 
   // Fitur inti Guru & Pegawai
   grant(['GURU', 'PEGAWAI'], 'absensi', ['create', 'read', 'update']);
   grant(['GURU', 'PEGAWAI'], 'wajah', ['create', 'read']);
   grant(['GURU', 'PEGAWAI'], 'agenda', CRUD);
   grant(['GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update']);
+  grant(['GURU', 'PEGAWAI'], 'shift_kerja', ['read']); // Fitur Baru: Guru & Pegawai hanya Read
 
   // 2. WEWENANG ADMIN & KEPALA SEKOLAH (Manajerial)
   const manajerial = ['ADMIN', 'KEPALA_SEKOLAH'];
@@ -116,6 +118,7 @@ function buildRoleMatrix() {
   grant(manajerial, 'pola_jam_kerja', CRUD);
   grant(manajerial, 'profile_sekolah', CRUD);
   grant(manajerial, 'izin', ['read', 'update']);
+  grant(manajerial, 'shift_kerja', CRUD); // Fitur Baru: Admin & Kepsek CRUD
 
   // Superuser: ADMIN mendapatkan akses dari semua role
   for (const [roleName, set] of Object.entries(matrix)) {

@@ -26,9 +26,10 @@ model User {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  user_roles   UserRole[]
-  overrides    UserPermissionOverride[]
-  reset_tokens PasswordResetToken[]
+  user_roles        UserRole[]
+  overrides         UserPermissionOverride[]
+  reset_tokens      PasswordResetToken[]
+  jadwalShiftKerjas JadwalShiftKerja[]
 
   @@map("users")
 }
@@ -112,4 +113,31 @@ model UserPermissionOverride {
   @@id([id_user, id_permission])
   @@index([id_permission])
   @@map("user_permission_overrides")
+}
+
+model PolaJamKerja {
+  id_pola_kerja     String   @id @default(uuid())
+  nama_pola_kerja   String   @unique
+  jam_mulai_kerja   String
+  jam_selesai_kerja String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  jadwal_shifts JadwalShiftKerja[]
+
+  @@map("pola_jam_kerja")
+}
+
+model JadwalShiftKerja {
+  id_jadwal_shift String   @id @default(uuid())
+  id_user         String
+  id_pola_kerja   String
+  tanggal         DateTime
+
+  user           User         @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  pola_jam_kerja PolaJamKerja @relation(fields: [id_pola_kerja], references: [id_pola_kerja], onDelete: Cascade)
+
+  @@unique([id_user, tanggal])
+  @@index([tanggal])
+  @@map("jadwal_shift_kerja")
 }
