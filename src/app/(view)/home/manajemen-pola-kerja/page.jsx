@@ -11,50 +11,19 @@ import AppSpace from '@/app/(view)/components_shared/AppSpace.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 
+import { useFetchPolaKerja } from './_hooks/useFetchPolaKerja';
+import { useDeletePolaKerja } from './_hooks/useDeletePolaKerja';
+
 export default function ManajemenPolaKerjaPage() {
-  const { message } = AntdApp.useApp();
   const screens = Grid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
-  const [loading, setLoading] = React.useState(true);
-  const [rows, setRows] = React.useState([]);
-
-  React.useEffect(() => {
-    let alive = true;
-
-    setLoading(true);
-    const t = setTimeout(() => {
-      if (!alive) return;
-
-      setRows([
-        {
-          id_pola_kerja: 'b59d1a1e-5fd8-4d0a-9b91-0fb6b0d6e001',
-          nama_pola_kerja: 'Pola Pagi',
-          jam_mulai_kerja: '07:00',
-          jam_selesai_kerja: '15:00',
-        },
-        {
-          id_pola_kerja: 'b59d1a1e-5fd8-4d0a-9b91-0fb6b0d6e002',
-          nama_pola_kerja: 'Pola Siang',
-          jam_mulai_kerja: '12:00',
-          jam_selesai_kerja: '20:00',
-        },
-        {
-          id_pola_kerja: 'b59d1a1e-5fd8-4d0a-9b91-0fb6b0d6e003',
-          nama_pola_kerja: 'Pola Malam',
-          jam_mulai_kerja: '20:00',
-          jam_selesai_kerja: '04:00',
-        },
-      ]);
-
-      setLoading(false);
-    }, 650);
-
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, []);
+  const { rows, loading, fetchPolaKerja, client, message } = useFetchPolaKerja();
+  const { deletingId, handleDelete } = useDeletePolaKerja({
+    client,
+    message,
+    onSuccess: fetchPolaKerja,
+  });
 
   const handleCreate = React.useCallback(() => {
     message.info('Aksi: Tambah Pola Kerja (dummy).');
@@ -63,17 +32,6 @@ export default function ManajemenPolaKerjaPage() {
   const handleEdit = React.useCallback(
     (record) => {
       message.info(`Aksi: Edit "${record?.nama_pola_kerja}" (dummy).`);
-    },
-    [message],
-  );
-
-  const handleDelete = React.useCallback(
-    (record) => {
-      const id = record?.id_pola_kerja;
-      if (!id) return;
-
-      setRows((prev) => prev.filter((r) => r.id_pola_kerja !== id));
-      message.success(`Terhapus: "${record?.nama_pola_kerja}"`);
     },
     [message],
   );
@@ -110,20 +68,6 @@ export default function ManajemenPolaKerjaPage() {
         ),
       },
       {
-        title: 'Jam Selesai',
-        dataIndex: 'jam_selesai_kerja',
-        key: 'jam_selesai_kerja',
-        width: 160,
-        render: (v) => (
-          <AppTypography
-            as='text'
-            tone='secondary'
-          >
-            {v || '-'}
-          </AppTypography>
-        ),
-      },
-      {
         title: 'Actions',
         key: 'actions',
         width: 170,
@@ -146,6 +90,7 @@ export default function ManajemenPolaKerjaPage() {
               type='text'
               danger
               icon={<DeleteOutlined />}
+              loading={deletingId === record?.id_pola_kerja}
               confirm={{
                 title: 'Hapus pola kerja ini?',
                 content: `Pola "${record?.nama_pola_kerja}" akan dihapus.`,
@@ -163,7 +108,7 @@ export default function ManajemenPolaKerjaPage() {
         ),
       },
     ],
-    [handleDelete, handleEdit],
+    [deletingId, handleDelete, handleEdit],
   );
 
   return (

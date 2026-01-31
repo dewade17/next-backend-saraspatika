@@ -1,5 +1,5 @@
 import { badRequest, conflict } from '@/lib/error.js';
-import { createPolaKerja, deletePolaKerja, findPolaKerjaById, findPolaKerjaByName, listPolaKerja, updatePolaKerja } from '@/repositories/pola-kerja/pola_kerja_repo.js';
+import { createPolaKerja, deletePolaKerja, findPolaKerjaById, findPolaKerjaByName, listPolaKerja, updatePolaKerja } from '@/repositories/pola_kerja/pola_kerja_repo.js';
 
 function normalizeName(nama_pola_kerja) {
   return String(nama_pola_kerja || '').trim();

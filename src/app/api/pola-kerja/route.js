@@ -4,8 +4,8 @@ import { apiRoute, parseBody } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
-import { polaKerjaCreateValidation } from '@/validations/pola-kerja/pola_kerja_validation.js';
-import { createPolaKerjaService, listPolaKerjaService } from '@/services/pola-kerja/pola_kerja_service.js';
+import { polaKerjaCreateValidation } from '@/validations/pola_kerja/pola_kerja_validation.js';
+import { createPolaKerjaService, listPolaKerjaService } from '@/services/pola_kerja/pola_kerja_service.js';
 
 export const runtime = 'nodejs';
 
