@@ -16,6 +16,13 @@ export async function listPolaKerja() {
   });
 }
 
+export async function findPolaKerjaById(id_pola_kerja) {
+  return await prisma.polaJamKerja.findUnique({
+    where: { id_pola_kerja },
+    select: publicSelect,
+  });
+}
+
 export async function findPolaKerjaByName(nama_pola_kerja) {
   return await prisma.polaJamKerja.findUnique({
     where: { nama_pola_kerja },
@@ -30,6 +37,21 @@ export async function createPolaKerja({ nama_pola_kerja, jam_mulai_kerja, jam_se
       jam_mulai_kerja,
       jam_selesai_kerja,
     },
+    select: publicSelect,
+  });
+}
+
+export async function updatePolaKerja(id_pola_kerja, data) {
+  return await prisma.polaJamKerja.update({
+    where: { id_pola_kerja },
+    data,
+    select: publicSelect,
+  });
+}
+
+export async function deletePolaKerja(id_pola_kerja) {
+  return await prisma.polaJamKerja.delete({
+    where: { id_pola_kerja },
     select: publicSelect,
   });
 }
