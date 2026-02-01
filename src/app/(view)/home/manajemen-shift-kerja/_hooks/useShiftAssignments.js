@@ -58,6 +58,7 @@ export function useShiftAssignments({ weekStart }) {
         });
       } catch (err) {
         message.errorFrom(err, { fallback: 'Gagal menyimpan jadwal shift' });
+        throw err;
       }
     },
     [client, message],

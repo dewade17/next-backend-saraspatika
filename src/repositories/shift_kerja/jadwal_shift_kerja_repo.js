@@ -10,8 +10,9 @@ const publicSelect = {
 export async function listJadwalShiftKerja({ startDate, endDate, userIds }) {
   const where = {
     tanggal: {
-      gte: startDate,
-      lte: endDate,
+      // Konversi string "YYYY-MM-DD" menjadi objek Date
+      gte: startDate ? new Date(startDate) : undefined,
+      lte: endDate ? new Date(endDate) : undefined,
     },
   };
 
@@ -29,12 +30,12 @@ export async function listJadwalShiftKerja({ startDate, endDate, userIds }) {
 export async function upsertJadwalShiftKerja({ id_user, id_pola_kerja, tanggal }, db = prisma) {
   return await db.jadwalShiftKerja.upsert({
     where: {
-      id_user_tanggal: { id_user, tanggal },
+      id_user_tanggal: { id_user, tanggal: new Date(tanggal) },
     },
     create: {
       id_user,
       id_pola_kerja,
-      tanggal,
+      tanggal: new Date(tanggal),
     },
     update: {
       id_pola_kerja,
@@ -45,6 +46,6 @@ export async function upsertJadwalShiftKerja({ id_user, id_pola_kerja, tanggal }
 
 export async function deleteJadwalShiftKerja({ id_user, tanggal }, db = prisma) {
   return await db.jadwalShiftKerja.deleteMany({
-    where: { id_user, tanggal },
+    where: { id_user, tanggal: new Date(tanggal) },
   });
 }

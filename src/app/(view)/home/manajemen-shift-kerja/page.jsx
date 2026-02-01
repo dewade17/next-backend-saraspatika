@@ -49,7 +49,7 @@ export default function ManajemenShiftKerjaPage() {
   const [repeatByUser, setRepeatByUser] = React.useState(() => new Map());
 
   const { users, patterns, loadingUsers, loadingPatterns } = useShiftGridData();
-  const { assignments, setAssignments, loadingAssignments, saveAssignments } = useShiftAssignments({ weekStart });
+  const { assignments, setAssignments, loadingAssignments, saveAssignments, refetchAssignments } = useShiftAssignments({ weekStart });
   const weekDates = React.useMemo(() => buildWeekDates(weekStart), [weekStart]);
 
   const filteredUsers = React.useMemo(() => {
@@ -105,8 +105,7 @@ export default function ManajemenShiftKerjaPage() {
       return m;
     });
   }
-
-  function handleChangeAssignment({ userId, date, patternId }) {
+  async function handleChangeAssignment({ userId, date, patternId }) {
     const uId = String(userId);
     const dateKey = toDateKey(date);
     const mapKey = `${uId}::${dateKey}`;
@@ -137,8 +136,12 @@ export default function ManajemenShiftKerjaPage() {
         }
         cursor = cursor.add(1, 'day');
       }
-
-      saveAssignments(updates);
+      try {
+        await saveAssignments(updates);
+        await refetchAssignments();
+      } catch {
+        await refetchAssignments();
+      }
       return;
     }
 
@@ -148,13 +151,18 @@ export default function ManajemenShiftKerjaPage() {
       else next.delete(mapKey);
       return next;
     });
-    saveAssignments([
-      {
-        id_user: uId,
-        tanggal: dateKey,
-        id_pola_kerja: patternId ? String(patternId) : null,
-      },
-    ]);
+    try {
+      await saveAssignments([
+        {
+          id_user: uId,
+          tanggal: dateKey,
+          id_pola_kerja: patternId ? String(patternId) : null,
+        },
+      ]);
+      await refetchAssignments();
+    } catch {
+      await refetchAssignments();
+    }
   }
 
   return (

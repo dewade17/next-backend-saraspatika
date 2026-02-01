@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { badRequest } from '@/lib/error.js';
+import { formatToDbDate } from '@/lib/date_helper.js';
 import { prisma } from '@/lib/db.js';
 import { deleteJadwalShiftKerja, listJadwalShiftKerja, upsertJadwalShiftKerja } from '@/repositories/shift_kerja/jadwal_shift_kerja_repo.js';
 
@@ -10,9 +11,9 @@ function normalizeId(value, label) {
 }
 
 function normalizeDate(value, label) {
-  const d = dayjs(value).startOf('day');
-  if (!d.isValid()) throw badRequest(`${label} tidak valid`, { code: `${label}_invalid` });
-  return d.toDate();
+  const formatted = formatToDbDate(value);
+  if (!formatted) throw badRequest(`${label} tidak valid`, { code: `${label}_invalid` });
+  return formatted;
 }
 
 function formatDateOnly(value) {

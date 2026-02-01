@@ -39,10 +39,7 @@ export default function UserRowHeader({ user }) {
 
         <div className='min-w-0'>
           <div className='font-semibold text-slate-800 truncate'>{name}</div>
-          <div className='text-xs text-slate-500 truncate'>
-            {role || '—'}
-            {status ? ` | ${status}` : ''}
-          </div>
+          <div className='text-xs text-slate-500 truncate'>{status ? ` ${status}` : ''}</div>
         </div>
       </div>
 
