@@ -53,7 +53,7 @@ export default function PermissionPage() {
               level={4}
               style={{ margin: 0, fontWeight: 700 }}
             >
-              Manajemen Permission Matrix
+              Manajemen Permission Pengguna
             </AppTypography>
             <AppButton
               type='primary'

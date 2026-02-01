@@ -17,32 +17,15 @@ function buildMonthOptions(anchor) {
   }));
 }
 
-export default function ShiftGridToolbar({ monthAnchor, onPickMonth, onPrevWeek, onNextWeek, weekStart, weekDates, divisiOptions, jabatanOptions, selectedDivisi, selectedJabatan, setSelectedDivisi, setSelectedJabatan }) {
+export default function ShiftGridToolbar({ monthAnchor, onPickMonth, onPrevWeek, onNextWeek, weekStart, weekDates }) {
   const monthOptions = React.useMemo(() => buildMonthOptions(monthAnchor), [monthAnchor]);
 
   return (
     <div className='w-full'>
-      <div className='grid w-full grid-cols-1 gap-2 md:grid-cols-[minmax(0,320px)_auto] md:grid-rows-2 md:items-center md:gap-x-6'>
-        {/* Row 1 - Col 1 */}
-        <Select
-          value={selectedDivisi}
-          onChange={setSelectedDivisi}
-          options={divisiOptions}
-          className='w-full md:col-start-1 md:row-start-1 md:min-w-[260px]'
-          size='middle'
-        />
-
-        {/* Row 2 - Col 1 */}
-        <Select
-          value={selectedJabatan}
-          onChange={setSelectedJabatan}
-          options={jabatanOptions}
-          className='w-full md:col-start-1 md:row-start-2 md:min-w-[260px]'
-          size='middle'
-        />
-
-        {/* Row 1 - Col 2 */}
-        <div className='flex flex-wrap items-center gap-2 md:col-start-2 md:row-start-1 md:justify-self-end'>
+      {/* 1. PENYESUAIAN GRID: Sekarang lebih sederhana karena filter hilang */}
+      <div className='flex flex-wrap items-center justify-between gap-4'>
+        {/* Navigasi Minggu */}
+        <div className='flex items-center gap-2'>
           <AppButton
             size='middle'
             onClick={onPrevWeek}
@@ -59,7 +42,7 @@ export default function ShiftGridToolbar({ monthAnchor, onPickMonth, onPrevWeek,
           </AppButton>
         </div>
 
-        {/* Row 2 - Col 2 */}
+        {/* Pemilih Bulan */}
         <DatePicker
           picker='month'
           value={dayjs(monthAnchor)}
@@ -67,7 +50,7 @@ export default function ShiftGridToolbar({ monthAnchor, onPickMonth, onPrevWeek,
             if (!v) return;
             onPickMonth(dayjs(v).startOf('month'));
           }}
-          className='w-full md:w-auto md:min-w-[140px] md:col-start-2 md:row-start-2 md:justify-self-end'
+          className='w-full md:w-auto md:min-w-[140px]'
           format='YYYY-MM'
           size='middle'
         />

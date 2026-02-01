@@ -141,3 +141,15 @@ model JadwalShiftKerja {
   @@index([tanggal])
   @@map("jadwal_shift_kerja")
 }
+
+model Lokasi {
+  id_lokasi   String   @id @default(uuid())
+  nama_lokasi String   @unique
+  latitude    Float
+  longitude   Float
+  radius      Int // Jarak jangkauan dalam satuan meter
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("lokasi")
+}

@@ -11,7 +11,7 @@ import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useSubmitUser } from './_hooks/useSubmitUser';
 import { useDeleteUser } from './_hooks/useDeleteUser';
 import { matchesQuery } from './_utils/userHelpers';
-
+import { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
@@ -52,10 +52,25 @@ export default function ManajemenPenggunaPage() {
   return (
     <div style={{ width: '100%', padding: isMdUp ? 16 : 12 }}>
       <AppFlex
-        justify='flex-end'
-        align='center'
+        direction='column'
+        align='flex-end' // Mengatur semua elemen di dalamnya menempel ke kanan
         gap={10}
+        style={{ width: '100%' }}
       >
+        <div
+          className='px-3 pt-3'
+          style={{ width: '100%' }}
+        >
+          <AppFlex
+            direction='column'
+            gap={10}
+            style={{ width: '100%' }}
+          >
+            {/* Jika ingin teks judul tetap di kiri, beri alignSelf: 'flex-start' */}
+            <H2 style={{ margin: 0, textAlign: 'left' }}>Manajemen Pengguna</H2>
+          </AppFlex>
+        </div>
+
         <div style={{ width: isMdUp ? 260 : 220 }}>
           <AppInput.Search
             placeholder='Search'

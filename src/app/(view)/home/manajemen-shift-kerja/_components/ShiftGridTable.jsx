@@ -18,7 +18,7 @@ function isPast(date) {
   return dayjs(date).startOf('day').isBefore(dayjs().startOf('day'), 'day');
 }
 
-export default function ShiftGridTable({ weekDates, users, patterns, loadingUsers, loadingPatterns, loadingAssignments, assignments, repeatByUser, onToggleRepeat, onChangeAssignment }) {
+export default function ShiftGridTable({ weekDates, users, patterns, loadingUsers, loadingPatterns, loadingAssignments, assignments, repeatByUser, repeatSavingByUser, onToggleRepeat, onChangeAssignment }) {
   const gridTemplateColumns = React.useMemo(() => {
     // Left column sticky + 7 day columns
     return '360px repeat(7, 280px)';
@@ -69,8 +69,11 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
         {users.map((u, rowIdx) => {
           const userId = getUserId(u);
           const repeatOn = !!repeatByUser.get(userId);
+          const savingRepeat = !!repeatSavingByUser?.get(userId);
+
           const isEven = rowIdx % 2 === 0;
           const rowBgColor = isEven ? 'bg-[#f8fafc]' : 'bg-white';
+
           return (
             <div
               key={userId}
@@ -78,15 +81,27 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
               style={{ display: 'grid', gridTemplateColumns }}
             >
               <div className={`sticky left-0 z-10 border-r border-slate-200 px-4 py-4 ${rowBgColor}`}>
-                <UserRowHeader user={u} />
+                <UserRowHeader
+                  user={u}
+                  weekDates={weekDates}
+                  assignments={assignments}
+                  patterns={patterns}
+                />
 
                 <div className='mt-3'>
                   <Checkbox
                     checked={repeatOn}
+                    disabled={savingRepeat}
                     onChange={(e) => onToggleRepeat(userId, e.target.checked)}
                   >
                     <span className='text-xs text-slate-600'>Ulangi minggu ini sampai akhir bulan</span>
                   </Checkbox>
+
+                  {savingRepeat ? (
+                    <div className='mt-1'>
+                      <Text className='text-xs text-slate-400'>Menerapkan pengulangan...</Text>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
