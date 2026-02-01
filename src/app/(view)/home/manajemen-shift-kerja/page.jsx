@@ -10,6 +10,7 @@ import { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import ShiftGridToolbar from './_components/ShiftGridToolbar.jsx';
 import ShiftGridTable from './_components/ShiftGridTable.jsx';
 import { useShiftGridData } from './_hooks/useShiftGridData.js';
+import { useShiftAssignments } from './_hooks/useShiftAssignments.js';
 import { buildWeekDates, startOfWeekMonday, toDateKey } from './_utils/date.js';
 
 function endOfMonth(d) {
@@ -46,10 +47,9 @@ export default function ManajemenShiftKerjaPage() {
   const [selectedJabatan, setSelectedJabatan] = React.useState('ALL');
 
   const [repeatByUser, setRepeatByUser] = React.useState(() => new Map());
-  const [assignments, setAssignments] = React.useState(() => new Map());
 
   const { users, patterns, loadingUsers, loadingPatterns } = useShiftGridData();
-
+  const { assignments, setAssignments, loadingAssignments, saveAssignments } = useShiftAssignments({ weekStart });
   const weekDates = React.useMemo(() => buildWeekDates(weekStart), [weekStart]);
 
   const filteredUsers = React.useMemo(() => {
@@ -114,6 +114,11 @@ export default function ManajemenShiftKerjaPage() {
     const isRepeatOn = !!repeatByUser.get(uId);
 
     if (isRepeatOn) {
+      const updates = [];
+      const start = dayjs(weekStart).startOf('day');
+      const eom = endOfMonth(dayjs(date));
+      const targetDow = dayjs(date).day();
+
       applyRepeatUntilEndOfMonth({
         weekStart,
         pickedDate: dayjs(date).startOf('day'),
@@ -121,6 +126,19 @@ export default function ManajemenShiftKerjaPage() {
         patternId: patternId ? String(patternId) : null,
         setAssignments,
       });
+      let cursor = start.clone();
+      while (cursor.isSameOrBefore(eom, 'day')) {
+        if (cursor.day() === targetDow) {
+          updates.push({
+            id_user: uId,
+            tanggal: toDateKey(cursor),
+            id_pola_kerja: patternId ? String(patternId) : null,
+          });
+        }
+        cursor = cursor.add(1, 'day');
+      }
+
+      saveAssignments(updates);
       return;
     }
 
@@ -130,6 +148,13 @@ export default function ManajemenShiftKerjaPage() {
       else next.delete(mapKey);
       return next;
     });
+    saveAssignments([
+      {
+        id_user: uId,
+        tanggal: dateKey,
+        id_pola_kerja: patternId ? String(patternId) : null,
+      },
+    ]);
   }
 
   return (
@@ -187,6 +212,7 @@ export default function ManajemenShiftKerjaPage() {
               repeatByUser={repeatByUser}
               onToggleRepeat={handleToggleRepeat}
               onChangeAssignment={handleChangeAssignment}
+              loadingAssignments={loadingAssignments}
             />
           </AppCard>
         </div>

@@ -18,7 +18,7 @@ function isPast(date) {
   return dayjs(date).startOf('day').isBefore(dayjs().startOf('day'), 'day');
 }
 
-export default function ShiftGridTable({ weekDates, users, patterns, loadingUsers, loadingPatterns, assignments, repeatByUser, onToggleRepeat, onChangeAssignment }) {
+export default function ShiftGridTable({ weekDates, users, patterns, loadingUsers, loadingPatterns, loadingAssignments, assignments, repeatByUser, onToggleRepeat, onChangeAssignment }) {
   const gridTemplateColumns = React.useMemo(() => {
     // Left column sticky + 7 day columns
     return '360px repeat(7, 280px)';
@@ -45,7 +45,7 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
   );
 
   const body = (() => {
-    if (loadingUsers || loadingPatterns) {
+    if (loadingUsers || loadingPatterns || loadingAssignments) {
       return (
         <div className='p-4'>
           <Skeleton
