@@ -1,68 +1,34 @@
 import { badRequest, conflict } from '@/lib/error.js';
 import { createPolaKerja, deletePolaKerja, findPolaKerjaById, findPolaKerjaByName, listPolaKerja, updatePolaKerja } from '@/repositories/pola_kerja/pola_kerja_repo.js';
-
-const timePattern = /^\d{2}:\d{2}(:\d{2})?$/;
+import { formatToTime, parseToDate } from '@/lib/time_helper.js';
 
 function normalizeName(nama_pola_kerja) {
   return String(nama_pola_kerja || '').trim();
 }
 
 function toTimeDate(value) {
-  if (value == null) return null;
-
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
-
-  if (typeof value === 'number') {
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    if (timePattern.test(trimmed)) {
-      const [hh, mm, ss = '0'] = trimmed.split(':');
-      const hour = Number.parseInt(hh, 10);
-      const minute = Number.parseInt(mm, 10);
-      const second = Number.parseInt(ss, 10);
-      if ([hour, minute, second].some((n) => Number.isNaN(n))) return null;
-      return new Date(Date.UTC(1970, 0, 1, hour, minute, second));
-    }
-
-    const parsed = new Date(trimmed);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  return null;
+  return parseToDate(value);
 }
 
 function formatTimeValue(value) {
   if (value == null) return null;
 
   if (value instanceof Date) {
-    if (Number.isNaN(value.getTime())) return null;
-    return value.toISOString().slice(11, 16);
+    return formatToTime(value);
   }
 
   if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    if (timePattern.test(trimmed)) return trimmed.slice(0, 5);
-    const parsed = new Date(trimmed);
-    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(11, 16);
+    const parsed = parseToDate(value);
+    return parsed ? formatToTime(parsed) : null;
   }
 
   if (typeof value === 'number') {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(11, 16);
+    const parsed = parseToDate(value);
+    return parsed ? formatToTime(parsed) : null;
   }
 
   return null;
 }
-
 function serializePolaKerja(data) {
   if (!data) return data;
   return {
