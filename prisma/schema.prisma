@@ -13,6 +13,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum StatusAbsensi {
+  TEPAT
+  TERLAMBAT
+}
+
 model User {
   id_user         String   @id @default(uuid())
   email           String   @unique
@@ -30,6 +35,8 @@ model User {
   overrides         UserPermissionOverride[]
   reset_tokens      PasswordResetToken[]
   jadwalShiftKerjas JadwalShiftKerja[]
+  userFace          UserFace?
+  absensis          Absensi[]
 
   @@map("users")
 }
@@ -136,6 +143,7 @@ model JadwalShiftKerja {
 
   user           User         @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   pola_jam_kerja PolaJamKerja @relation(fields: [id_pola_kerja], references: [id_pola_kerja], onDelete: Cascade)
+  absensis       Absensi[]
 
   @@unique([id_user, tanggal])
   @@index([tanggal])
@@ -147,9 +155,69 @@ model Lokasi {
   nama_lokasi String   @unique
   latitude    Float
   longitude   Float
-  radius      Int // Jarak jangkauan dalam satuan meter
+  radius      Int
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
+  // Relasi yang benar: memisahkan mana absensi masuk dan mana keluar
+  absensis_datang Absensi[] @relation("LokasiDatang")
+  absensis_pulang Absensi[] @relation("LokasiPulang")
+
   @@map("lokasi")
+}
+
+model UserFace {
+  id_biometrik String @id @default(uuid())
+  id_user      String @unique
+
+  embedding_path String @db.Text
+  foto_referensi String @db.Text
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@map("user_face")
+}
+
+model Absensi {
+  id_absensi      String  @id @default(uuid())
+  id_user         String
+  id_jadwal_shift String?
+
+  // ID Lokasi (Foreign Key)
+  id_lokasi_datang String? @db.Char(36)
+  id_lokasi_pulang String? @db.Char(36)
+
+  waktu_masuk  DateTime  @default(now())
+  waktu_pulang DateTime?
+
+  face_verified_masuk  Boolean @default(false)
+  face_verified_pulang Boolean @default(false)
+
+  // Nextcloud Path (Memisahkan foto masuk dan pulang)
+  foto_absensi_masuk  String? @db.Text
+  foto_absensi_pulang String? @db.Text
+
+  status_masuk  StatusAbsensi @default(TEPAT)
+  status_pulang StatusAbsensi @default(TEPAT)
+
+  // Koordinat Aktual saat User menekan tombol di Flutter
+  in_latitude   Decimal? @db.Decimal(10, 6)
+  in_longitude  Decimal? @db.Decimal(10, 6)
+  out_latitude  Decimal? @db.Decimal(10, 6)
+  out_longitude Decimal? @db.Decimal(10, 6)
+
+  // RELASI
+  user               User              @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  jadwal_shift_kerja JadwalShiftKerja? @relation(fields: [id_jadwal_shift], references: [id_jadwal_shift])
+
+  // Menghubungkan FK ke model Lokasi dengan label yang jelas
+  lokasi_datang Lokasi? @relation("LokasiDatang", fields: [id_lokasi_datang], references: [id_lokasi])
+  lokasi_pulang Lokasi? @relation("LokasiPulang", fields: [id_lokasi_pulang], references: [id_lokasi])
+
+  @@index([id_user])
+  @@index([waktu_masuk])
+  @@map("absensi")
 }

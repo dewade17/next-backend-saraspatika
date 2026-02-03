@@ -26,16 +26,18 @@ export default function ManajemenLokasiPage() {
   const screens = Grid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
-  const { locations, setLocations, loading, q, setQ, message } = useFetchLocations();
+  const { locations, loading, q, setQ, message, fetchLocations, client } = useFetchLocations();
 
   const { deletingId, handleDelete } = useDeleteLocation({
+    client,
     message,
-    setLocations,
+    onSuccess: fetchLocations,
   });
 
   const { isOpen, setIsOpen, mode, activeLocation, openCreate, openEdit, handleSubmit, submitting } = useSubmitLocation({
+    client,
     message,
-    setLocations,
+    onSuccess: fetchLocations,
   });
 
   const filtered = React.useMemo(() => locations.filter((l) => matchesQuery(l, q)), [locations, q]);

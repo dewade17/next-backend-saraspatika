@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function useDeleteLocation({ message, setLocations }) {
+export function useDeleteLocation({ client, message, onSuccess }) {
   const [deletingId, setDeletingId] = React.useState(null);
 
   const handleDelete = async (loc) => {
@@ -9,9 +9,9 @@ export function useDeleteLocation({ message, setLocations }) {
 
     setDeletingId(id);
     try {
-      // placeholder (tanpa API): langsung hapus dari state
-      setLocations((prev) => (Array.isArray(prev) ? prev.filter((l) => l.id !== id) : []));
+      await client.del(`/api/lokasi/${id}`);
       message.success('Lokasi berhasil dihapus.');
+      if (onSuccess) await onSuccess(loc);
     } catch (err) {
       message.errorFrom(err, { fallback: 'Gagal menghapus lokasi.' });
     } finally {

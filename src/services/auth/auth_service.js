@@ -55,7 +55,7 @@ export async function login({ email, password }) {
   if (!ok) throw unauthorized('Invalid credentials', { code: 'invalid_credentials' });
 
   const perms = Array.from(await getPermSet(user.id_user));
-  const token = await issueAccessToken({ sub: user.id_user, email: user.email, perms }, '20m');
+  const token = await issueAccessToken({ sub: user.id_user, email: user.email, perms }, '365d');
 
   return { user, token };
 }

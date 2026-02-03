@@ -27,3 +27,25 @@ export function buildLocationPayload(values) {
     radius: toNumber(values?.radius),
   };
 }
+
+export function buildLocationApiPayload(values) {
+  const payload = buildLocationPayload(values);
+  return {
+    nama_lokasi: payload.name,
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    radius: payload.radius,
+  };
+}
+
+export function mapLocationFromApi(lokasi) {
+  if (!lokasi) return null;
+
+  return {
+    id: lokasi?.id_lokasi ?? lokasi?.id ?? null,
+    name: lokasi?.nama_lokasi ?? lokasi?.name ?? '',
+    latitude: toNumber(lokasi?.latitude),
+    longitude: toNumber(lokasi?.longitude),
+    radius: toNumber(lokasi?.radius),
+  };
+}
