@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import { badRequest } from '@/lib/error.js';
 import { formatToDbDate } from '@/lib/date_helper.js';
 import { prisma } from '@/lib/db.js';
-import { deleteJadwalShiftKerja, listJadwalShiftKerja, upsertJadwalShiftKerja } from '@/repositories/shift_kerja/jadwal_shift_kerja_repo.js';
+import { deleteJadwalShiftKerja, findJadwalShiftKerjaByUserAndRange, listJadwalShiftKerja, upsertJadwalShiftKerja } from '@/repositories/shift_kerja/jadwal_shift_kerja_repo.js';
 
 function normalizeId(value, label) {
   const v = String(value || '').trim();
@@ -23,9 +23,17 @@ function formatDateOnly(value) {
 
 function serializeRow(row) {
   if (!row) return row;
+
+  // Destructure menggunakan nama pola_jam_kerja
+  const { pola_jam_kerja, ...rest } = row;
+
   return {
-    ...row,
+    ...rest,
     tanggal: formatDateOnly(row.tanggal),
+    // Ambil data dari pola_jam_kerja
+    nama_pola_kerja: pola_jam_kerja?.nama_pola_kerja || null,
+    jam_mulai_kerja: pola_jam_kerja?.jam_mulai_kerja || null,
+    jam_selesai_kerja: pola_jam_kerja?.jam_selesai_kerja || null,
   };
 }
 
@@ -70,4 +78,13 @@ export async function upsertJadwalShiftKerjaService(assignments) {
     upserted: results.map((row) => serializeRow(row)),
     deleted: toDelete.length,
   };
+}
+
+export async function getTodayJadwalShiftKerjaService({ id_user, now = new Date() } = {}) {
+  const userId = normalizeId(id_user, 'id_user');
+  const base = dayjs(now);
+  const startAt = base.startOf('day').toDate();
+  const endAt = base.endOf('day').toDate();
+  const row = await findJadwalShiftKerjaByUserAndRange({ id_user: userId, startAt, endAt });
+  return serializeRow(row);
 }

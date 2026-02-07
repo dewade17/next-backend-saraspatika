@@ -5,6 +5,14 @@ const publicSelect = {
   id_user: true,
   id_pola_kerja: true,
   tanggal: true,
+  // Sesuaikan nama field sesuai saran error Prisma
+  pola_jam_kerja: {
+    select: {
+      nama_pola_kerja: true,
+      jam_mulai_kerja: true,
+      jam_selesai_kerja: true,
+    },
+  },
 };
 
 export async function listJadwalShiftKerja({ startDate, endDate, userIds }) {
@@ -47,5 +55,19 @@ export async function upsertJadwalShiftKerja({ id_user, id_pola_kerja, tanggal }
 export async function deleteJadwalShiftKerja({ id_user, tanggal }, db = prisma) {
   return await db.jadwalShiftKerja.deleteMany({
     where: { id_user, tanggal: new Date(tanggal) },
+  });
+}
+
+export async function findJadwalShiftKerjaByUserAndRange({ id_user, startAt, endAt }) {
+  return await prisma.jadwalShiftKerja.findFirst({
+    where: {
+      id_user,
+      tanggal: {
+        gte: startAt,
+        lte: endAt,
+      },
+    },
+    select: publicSelect,
+    orderBy: [{ tanggal: 'asc' }],
   });
 }

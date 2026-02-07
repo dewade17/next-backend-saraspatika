@@ -40,7 +40,7 @@ export async function register({ name, email, password, role_name, autoLogin = t
   let token = null;
   if (autoLogin) {
     const perms = Array.from(await getPermSet(user.id_user));
-    token = await issueAccessToken({ sub: user.id_user, email: user.email, perms }, '20m');
+    token = await issueAccessToken({ sub: user.id_user, email: user.email, perms }, '365d');
   }
 
   return { user, role_assigned: roleToAssign, token };

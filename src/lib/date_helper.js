@@ -21,3 +21,16 @@ export function formatToDbDate(value) {
 
   return null;
 }
+
+/**
+ * Format tanggal untuk tampilan UI Manajemen Face
+ * Output: "D-M-YYYY HH.mm"
+ */
+export function formatFaceRegistration(rawDate) {
+  if (!rawDate) return null;
+  const parsed = dayjs(rawDate);
+  if (!parsed.isValid()) return null;
+
+  // Menggunakan format titik sesuai kebutuhan UI Anda
+  return parsed.format('D-M-YYYY HH:mm').replace(':', '.');
+}

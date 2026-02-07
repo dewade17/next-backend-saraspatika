@@ -129,7 +129,7 @@ const menuConfig = [
   {
     key: 'reset-face',
     label: 'Reset Face',
-    href: '/home/reset-face',
+    href: '/home/manajemen-face',
     icon: <UserOutlined />,
     // PERBAIKAN: Gunakan resource 'wajah' dengan action 'delete'
     // karena di seed: grant(manajerial, 'wajah', ['read', 'delete']);

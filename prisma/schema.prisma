@@ -18,6 +18,12 @@ enum StatusAbsensi {
   TERLAMBAT
 }
 
+enum RequestStatus {
+  MENUNGGU
+  SETUJU
+  DITOLAK
+}
+
 model User {
   id_user         String   @id @default(uuid())
   email           String   @unique
@@ -37,6 +43,8 @@ model User {
   jadwalShiftKerjas JadwalShiftKerja[]
   userFace          UserFace?
   absensis          Absensi[]
+  face_requests     FaceResetRequest[]       @relation("UserRequests")
+  admin_decisions   FaceResetRequest[]       @relation("AdminDecisions")
 
   @@map("users")
 }
@@ -196,12 +204,8 @@ model Absensi {
   face_verified_masuk  Boolean @default(false)
   face_verified_pulang Boolean @default(false)
 
-  // Nextcloud Path (Memisahkan foto masuk dan pulang)
-  foto_absensi_masuk  String? @db.Text
-  foto_absensi_pulang String? @db.Text
-
-  status_masuk  StatusAbsensi @default(TEPAT)
-  status_pulang StatusAbsensi @default(TEPAT)
+  status_masuk  StatusAbsensi?
+  status_pulang StatusAbsensi?
 
   // Koordinat Aktual saat User menekan tombol di Flutter
   in_latitude   Decimal? @db.Decimal(10, 6)
@@ -220,4 +224,24 @@ model Absensi {
   @@index([id_user])
   @@index([waktu_masuk])
   @@map("absensi")
+}
+
+model FaceResetRequest {
+  id_request String        @id @default(uuid())
+  id_user    String
+  alasan     String        @db.Text
+  status     RequestStatus @default(MENUNGGU)
+  admin_note String?       @db.Text
+  id_admin   String? // ID Admin yang memproses pengajuan ini
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relasi ke User (Pemohon)
+  user User @relation("UserRequests", fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  // Relasi ke User (Admin yang menyetujui/menolak)
+  admin User? @relation("AdminDecisions", fields: [id_admin], references: [id_user])
+
+  @@map("face_reset_requests")
 }
