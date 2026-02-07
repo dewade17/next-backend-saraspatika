@@ -24,7 +24,7 @@ export default function ManajemenFacePage() {
 
   // Hook utama untuk mengambil data
   const { rows, loading, refresh } = useFetchUsers();
-  const { handleDeleteFace } = useDeleteFace(refresh);
+  const { handleDeleteFace, deletingId } = useDeleteFace(refresh);
 
   // --- Logika Perhitungan Statistik ---
   const stats = React.useMemo(() => {
@@ -79,6 +79,7 @@ export default function ManajemenFacePage() {
             danger
             icon={<DeleteOutlined />}
             confirm={{ title: 'Hapus data face?' }}
+            loading={deletingId === record?.id_user}
             onClick={() => handleDeleteFace(record)}
           >
             Hapus
@@ -86,7 +87,7 @@ export default function ManajemenFacePage() {
         ),
       },
     ],
-    [handleDeleteFace],
+    [deletingId, handleDeleteFace],
   );
 
   const columnsRequest = React.useMemo(
