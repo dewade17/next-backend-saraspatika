@@ -14,6 +14,7 @@ import { useFetchFaceResetRequests } from './_hooks/useFetchFaceResetRequest';
 import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useDeleteFace } from './_hooks/useDeleteFace';
 import { formatFaceRegistration } from '@/lib/date_helper.js';
+import { useUpdateFaceResetRequest } from './_hooks/useUpdateFaceResetRequest';
 
 export default function ManajemenFacePage() {
   const screens = Grid.useBreakpoint();
@@ -24,9 +25,9 @@ export default function ManajemenFacePage() {
 
   // Hook utama untuk mengambil data
   const { rows: userRows, loading: loadingUsers, refresh: refreshUsers } = useFetchUsers();
-  const { rows: requestRows, loading: loadingRequests } = useFetchFaceResetRequests();
+  const { rows: requestRows, loading: loadingRequests, refresh: refreshRequests } = useFetchFaceResetRequests();
   const { handleDeleteFace, deletingId } = useDeleteFace(refreshUsers);
-
+  const { handleUpdateStatus, updatingId } = useUpdateFaceResetRequest(refreshRequests);
   // --- Logika Perhitungan Statistik ---
   const stats = React.useMemo(() => {
     return {
@@ -138,6 +139,8 @@ export default function ManajemenFacePage() {
                 size='small'
                 type='primary'
                 icon={<CheckOutlined />}
+                loading={updatingId === record?.id_request}
+                onClick={() => handleUpdateStatus(record?.id_request, 'SETUJU')}
               >
                 Setujui
               </AppButton>
@@ -145,6 +148,8 @@ export default function ManajemenFacePage() {
                 size='small'
                 danger
                 icon={<CloseOutlined />}
+                loading={updatingId === record?.id_request}
+                onClick={() => handleUpdateStatus(record?.id_request, 'DITOLAK')}
               >
                 Tolak
               </AppButton>
@@ -154,7 +159,7 @@ export default function ManajemenFacePage() {
           ),
       },
     ],
-    [],
+    [handleUpdateStatus, updatingId],
   );
 
   return (

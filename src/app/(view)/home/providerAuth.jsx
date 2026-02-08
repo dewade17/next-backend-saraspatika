@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppNotification } from '@/app/(view)/components_shared/AppNotification.jsx';
+import { clearClientAccessToken } from '@/lib/client_token_for_delete_face_only.js';
 
 const AuthContext = React.createContext(null);
 
@@ -32,6 +33,7 @@ function safeRemoveLocalStorage(key) {
 
 function clearAuthStorage() {
   safeRemoveLocalStorage(AUTH_STORAGE_KEYS.id_user);
+  clearClientAccessToken();
 }
 
 export function useAuth() {
@@ -97,7 +99,6 @@ export default function ProviderAuth({ children, initialUser = null, initialPerm
   React.useEffect(() => {
     isActiveRef.current = true;
 
-    // IMPORTANT: jangan fetch lagi kalau user sudah ada
     if (!initialUser && !user) loadUser();
 
     return () => {
@@ -114,7 +115,6 @@ export default function ProviderAuth({ children, initialUser = null, initialPerm
     } catch {
       logoutFailed = true;
     } finally {
-      // Selalu bersihkan state & localStorage supaya tidak ada "sisa sesi"
       clearAuthStorage();
       setUser(null);
       setPerms([]);
@@ -142,5 +142,3 @@ export default function ProviderAuth({ children, initialUser = null, initialPerm
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-export { AUTH_STORAGE_KEYS };

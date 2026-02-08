@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const statusEnum = z.enum(['MENUNGGU', 'SETUJU', 'DITOLAK']);
+const statusEnum = z.preprocess((v) => (typeof v === 'string' ? v.toUpperCase() : v), z.enum(['MENUNGGU', 'SETUJU', 'DITOLAK']));
 
 function optTrim(max = 2000) {
   return z.preprocess((v) => {
