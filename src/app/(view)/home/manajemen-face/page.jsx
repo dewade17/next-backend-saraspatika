@@ -10,7 +10,7 @@ import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
 import AppTypography, { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
-
+import { useFetchFaceResetRequests } from './_hooks/useFetchFaceResetRequest';
 import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useDeleteFace } from './_hooks/useDeleteFace';
 import { formatFaceRegistration } from '@/lib/date_helper.js';
@@ -23,16 +23,17 @@ export default function ManajemenFacePage() {
   const [activeView, setActiveView] = React.useState('1');
 
   // Hook utama untuk mengambil data
-  const { rows, loading, refresh } = useFetchUsers();
-  const { handleDeleteFace, deletingId } = useDeleteFace(refresh);
+  const { rows: userRows, loading: loadingUsers, refresh: refreshUsers } = useFetchUsers();
+  const { rows: requestRows, loading: loadingRequests } = useFetchFaceResetRequests();
+  const { handleDeleteFace, deletingId } = useDeleteFace(refreshUsers);
 
   // --- Logika Perhitungan Statistik ---
   const stats = React.useMemo(() => {
     return {
-      totalActive: rows.length, // Asumsi rows adalah data user terdaftar
-      pendingCount: rows.filter((r) => r.status === 'MENUNGGU').length,
+      totalActive: userRows.length,
+      pendingCount: requestRows.filter((r) => r.status === 'MENUNGGU').length,
     };
-  }, [rows]);
+  }, [requestRows, userRows]);
 
   // --- Definisi Kolom ---
   const columnsActive = React.useMemo(
@@ -120,8 +121,10 @@ export default function ManajemenFacePage() {
         title: 'Status',
         key: 'status',
         render: (_, record) => {
-          const colors = { MENUNGGU: 'orange', DISETUJUI: 'green', DITOLAK: 'red' };
-          return <Tag color={colors[record.status]}>{record.status}</Tag>;
+          const colors = { MENUNGGU: 'orange', SETUJU: 'green', DISETUJUI: 'green', DITOLAK: 'red' };
+          const labels = { SETUJU: 'DISETUJUI' };
+          const statusLabel = labels[record.status] || record.status;
+          return <Tag color={colors[record.status] || 'default'}>{statusLabel}</Tag>;
         },
       },
       {
@@ -136,7 +139,7 @@ export default function ManajemenFacePage() {
                 type='primary'
                 icon={<CheckOutlined />}
               >
-                Terima
+                Setujui
               </AppButton>
               <AppButton
                 size='small'
@@ -230,9 +233,9 @@ export default function ManajemenFacePage() {
 
         <AppTable
           columns={activeView === '1' ? columnsActive : columnsRequest}
-          dataSource={rows} // Di sini bisa ditambahkan filter jika rows berisi gabungan
+          dataSource={activeView === '1' ? userRows : requestRows}
           rowKey={activeView === '1' ? 'id_user' : 'id_request'}
-          loading={loading}
+          loading={activeView === '1' ? loadingUsers : loadingRequests}
           searchable
           showToolbar={false}
           refreshable={false}
