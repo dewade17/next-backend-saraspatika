@@ -13,10 +13,20 @@ export function useFetchUsers() {
   const fetchRows = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await client.get('/api/users', { cache: 'no-store' });
-      setRows(Array.isArray(res?.data) ? res.data : []);
+      const res = await client.get('/api/faces', { cache: 'no-store' });
+      const payload = Array.isArray(res?.data) ? res.data : [];
+      const normalized = payload.map((item) => {
+        const user = item?.user || {};
+        return {
+          ...user,
+          ...item,
+          id_user: item?.id_user ?? user?.id_user,
+          face_registered_at: item?.created_at,
+        };
+      });
+      setRows(normalized);
     } catch (err) {
-      message.errorFrom(err, { fallback: 'Gagal memuat data pengguna' });
+      message.errorFrom(err, { fallback: 'Gagal memuat data face' });
       setRows([]);
     } finally {
       setLoading(false);

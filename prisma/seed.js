@@ -95,32 +95,33 @@ function buildRoleMatrix() {
     });
   };
 
+  // --- IZIN UNTUK SEMUA ROLE (GLOBAL CRUD) ---
+  // Kita gunakan nama resource 'reset_wajah'
+  grant(roles, 'reset_wajah', CRUD);
+
   // 1. WEWENANG GURU & PEGAWAI (Operasional Daily)
   grant(roles, 'auth', ['login', 'logout', 'request_token', 'reset_password']);
-  // MENGUBAH 'profile' MENJADI 'pengguna'
   grant(roles, 'pengguna', ['read', 'update']);
 
-  // Fitur inti Guru & Pegawai
   grant(['GURU', 'PEGAWAI'], 'absensi', ['create', 'read', 'update']);
-  grant(['GURU', 'PEGAWAI'], 'wajah', ['create', 'read']);
+  grant(['GURU', 'PEGAWAI'], 'wajah', ['create', 'read']); // Ini untuk upload wajah
   grant(['GURU', 'PEGAWAI'], 'agenda', CRUD);
   grant(['GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update']);
-  grant(['GURU', 'PEGAWAI'], 'shift_kerja', ['read']); // Fitur Baru: Guru & Pegawai hanya Read
+  grant(['GURU', 'PEGAWAI'], 'shift_kerja', ['read']);
 
   // 2. WEWENANG ADMIN & KEPALA SEKOLAH (Manajerial)
   const manajerial = ['ADMIN', 'KEPALA_SEKOLAH'];
-
   grant(manajerial, 'absensi', ['read']);
   grant(manajerial, 'agenda', ['read']);
   grant(manajerial, 'pengguna', CRUD);
-  grant(manajerial, 'wajah', ['read', 'delete']);
+  grant(manajerial, 'wajah', ['read', 'delete']); // Admin bisa hapus data wajah
   grant(manajerial, 'lokasi', CRUD);
   grant(manajerial, 'pola_jam_kerja', CRUD);
   grant(manajerial, 'profile_sekolah', CRUD);
   grant(manajerial, 'izin', ['read', 'update']);
-  grant(manajerial, 'shift_kerja', CRUD); // Fitur Baru: Admin & Kepsek CRUD
+  grant(manajerial, 'shift_kerja', CRUD);
 
-  // Superuser: ADMIN mendapatkan akses dari semua role
+  // Superuser Logic
   for (const [roleName, set] of Object.entries(matrix)) {
     if (roleName === 'ADMIN') continue;
     set.forEach((p) => matrix.ADMIN.add(p));
