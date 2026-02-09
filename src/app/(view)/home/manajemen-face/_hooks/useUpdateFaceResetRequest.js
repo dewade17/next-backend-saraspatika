@@ -8,7 +8,7 @@ export function useUpdateFaceResetRequest(onSuccess) {
   const [updatingId, setUpdatingId] = React.useState(null);
 
   const handleUpdateStatus = React.useCallback(
-    async (id, status) => {
+    async (id, status, extraData = {}) => {
       if (!id) {
         message.error('ID request tidak ditemukan');
         return;
@@ -26,7 +26,7 @@ export function useUpdateFaceResetRequest(onSuccess) {
       try {
         const normalizedStatus = String(status).toUpperCase();
         await client.patch(`/api/face-reset-request/${id}`, {
-          json: { status: normalizedStatus },
+          json: { status: normalizedStatus, ...extraData },
         });
         message.success('Status permintaan berhasil diperbarui', { key: messageKey });
         if (onSuccess) await onSuccess();

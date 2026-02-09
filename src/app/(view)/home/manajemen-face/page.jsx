@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Grid, Tag, Statistic, Card, Row, Col } from 'antd';
+import { Grid, Tag, Statistic, Card, Row, Col, Modal } from 'antd';
 import { DeleteOutlined, HistoryOutlined, UserOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
+import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
 import AppTypography, { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
@@ -35,6 +36,31 @@ export default function ManajemenFacePage() {
       pendingCount: requestRows.filter((r) => r.status === 'MENUNGGU').length,
     };
   }, [requestRows, userRows]);
+
+  const handleRejectRequest = React.useCallback(
+    (record) => {
+      const noteRef = { current: '' };
+
+      Modal.confirm({
+        title: 'Tolak permintaan reset?',
+        centered: true,
+        okText: 'Tolak',
+        cancelText: 'Batal',
+        okButtonProps: { danger: true },
+        content: (
+          <AppInput.TextArea
+            placeholder='Masukkan alasan penolakan'
+            rows={4}
+            onChange={(event) => {
+              noteRef.current = event?.target?.value ?? '';
+            }}
+          />
+        ),
+        onOk: () => handleUpdateStatus(record?.id_request, 'DITOLAK', { admin_note: noteRef.current }),
+      });
+    },
+    [handleUpdateStatus],
+  );
 
   // --- Definisi Kolom ---
   const columnsActive = React.useMemo(
@@ -149,7 +175,7 @@ export default function ManajemenFacePage() {
                 danger
                 icon={<CloseOutlined />}
                 loading={updatingId === record?.id_request}
-                onClick={() => handleUpdateStatus(record?.id_request, 'DITOLAK')}
+                onClick={() => handleRejectRequest(record)}
               >
                 Tolak
               </AppButton>
@@ -159,7 +185,7 @@ export default function ManajemenFacePage() {
           ),
       },
     ],
-    [handleUpdateStatus, updatingId],
+    [handleRejectRequest, handleUpdateStatus, updatingId],
   );
 
   return (

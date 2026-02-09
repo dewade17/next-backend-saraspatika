@@ -194,6 +194,9 @@ model Absensi {
   id_user         String
   id_jadwal_shift String?
 
+  // Kolom baru: Correlation ID untuk tracking/idempotency
+  correlation_id String? @unique @db.Char(36)
+
   // ID Lokasi (Foreign Key)
   id_lokasi_datang String? @db.Char(36)
   id_lokasi_pulang String? @db.Char(36)
@@ -207,7 +210,7 @@ model Absensi {
   status_masuk  StatusAbsensi?
   status_pulang StatusAbsensi?
 
-  // Koordinat Aktual saat User menekan tombol di Flutter
+  // Koordinat Aktual
   in_latitude   Decimal? @db.Decimal(10, 6)
   in_longitude  Decimal? @db.Decimal(10, 6)
   out_latitude  Decimal? @db.Decimal(10, 6)
@@ -217,12 +220,12 @@ model Absensi {
   user               User              @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   jadwal_shift_kerja JadwalShiftKerja? @relation(fields: [id_jadwal_shift], references: [id_jadwal_shift])
 
-  // Menghubungkan FK ke model Lokasi dengan label yang jelas
   lokasi_datang Lokasi? @relation("LokasiDatang", fields: [id_lokasi_datang], references: [id_lokasi])
   lokasi_pulang Lokasi? @relation("LokasiPulang", fields: [id_lokasi_pulang], references: [id_lokasi])
 
   @@index([id_user])
   @@index([waktu_masuk])
+  @@index([correlation_id]) // Opsional: Tambahan index eksplisit jika diperlukan
   @@map("absensi")
 }
 

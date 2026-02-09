@@ -32,5 +32,5 @@ export function formatFaceRegistration(rawDate) {
   if (!parsed.isValid()) return null;
 
   // Menggunakan format titik sesuai kebutuhan UI Anda
-  return parsed.format('D-M-YYYY HH:mm').replace(':', '.');
+  return parsed.format('D-M-YYYY').replace(':', '.');
 }
