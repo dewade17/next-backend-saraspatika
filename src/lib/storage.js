@@ -341,8 +341,15 @@ export class Storage {
       if (!shareUrl) {
         throw new Error(`OCS response missing url: ${txt?.slice(0, 200)}`);
       }
+      const normalizedShareUrl = `${shareUrl.replace(/\/+$/, '')}?editing=false&openfile=true`;
       const directLink = `${shareUrl.replace(/\/+$/, '')}/download`;
-      return { ok: true, id, token, url: shareUrl, url: directLink };
+      return {
+        ok: true,
+        id,
+        token,
+        url: normalizedShareUrl,
+        directLink,
+      };
     } catch (err) {
       throw mapNextcloudError('create public share', err, 'nextcloud_share_failed');
     }

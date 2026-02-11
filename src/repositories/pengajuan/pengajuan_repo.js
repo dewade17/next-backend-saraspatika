@@ -5,6 +5,7 @@ const userSelect = {
   email: true,
   name: true,
   role: true,
+  nip: true,
   foto_profil_url: true,
 };
 
