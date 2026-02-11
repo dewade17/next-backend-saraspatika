@@ -24,6 +24,12 @@ enum RequestStatus {
   DITOLAK
 }
 
+enum JenisPengajuan {
+  IZIN
+  SAKIT
+  CUTI
+}
+
 model User {
   id_user         String   @id @default(uuid())
   email           String   @unique
@@ -45,6 +51,8 @@ model User {
   absensis          Absensi[]
   face_requests     FaceResetRequest[]       @relation("UserRequests")
   admin_decisions   FaceResetRequest[]       @relation("AdminDecisions")
+  pengajuans        PengajuanAbsensi[]       @relation("UserPengajuan")
+  persetujuans_adm  PengajuanAbsensi[]       @relation("AdminPersetujuan")
 
   @@map("users")
 }
@@ -247,4 +255,26 @@ model FaceResetRequest {
   admin User? @relation("AdminDecisions", fields: [id_admin], references: [id_user])
 
   @@map("face_reset_requests")
+}
+
+model PengajuanAbsensi {
+  id_pengajuan    String         @id @default(uuid())
+  id_user         String
+  jenis_pengajuan JenisPengajuan
+  tanggal_mulai   DateTime
+  tanggal_selesai DateTime
+  alasan          String         @db.Text
+  foto_bukti_url  String?        @db.Text // Opsional: Untuk foto surat dokter atau surat izin
+  status          RequestStatus  @default(MENUNGGU)
+  admin_note      String?        @db.Text
+  id_admin        String? // Admin yang memproses pengajuan
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relasi
+  user  User  @relation("UserPengajuan", fields: [id_user], references: [id_user], onDelete: Cascade)
+  admin User? @relation("AdminPersetujuan", fields: [id_admin], references: [id_user])
+
+  @@map("pengajuan_absensi")
 }
