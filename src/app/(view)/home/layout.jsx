@@ -66,7 +66,7 @@ const menuConfig = [
   {
     key: 'verifikasi',
     label: 'Verifikasi Izin',
-    href: '/home/verifikasi-izin',
+    href: '/home/manajemen-verifikasi-izin',
     icon: <ScheduleOutlined />,
     // Admin/Kepsek punya izin:update. Guru/Pegawai Cuma create/read.
     // Jadi menu ini HANYA muncul untuk Admin/Kepsek. TEPAT.

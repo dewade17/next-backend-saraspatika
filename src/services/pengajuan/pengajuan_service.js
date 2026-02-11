@@ -40,19 +40,37 @@ function normalizeDateUtc(value, fieldName) {
   return new Date(`${dbDate}T00:00:00.000Z`);
 }
 
-async function uploadFotoBukti(file) {
+async function uploadFotoBukti(file, options = {}) {
   if (!file || typeof file === 'string' || typeof file.arrayBuffer !== 'function' || file.size === 0) {
     return null;
   }
 
+  // 1. Tentukan nama file asli/kustom
+  const originalName = options.customFilename || file.name || 'bukti-pengajuan';
+  const extensionMatch = String(file.name || '').match(/(\.[a-z0-9]+)$/i);
+  const extension = extensionMatch?.[1] ?? '.png';
+
+  // Gabungkan nama dan ekstensi jika belum ada
+  const finalFilename = originalName.includes('.') ? originalName : `${originalName}${extension}`;
+
+  // 2. Upload ke storage
   const upload = await storage.upload({
     data: file,
-    filename: file.name || 'bukti-pengajuan.png',
+    filename: finalFilename,
     folder: 'pengajuan_absensi_bukti',
   });
 
+  // 3. Buat Share Link
   const share = await storage.createPublicShare(upload.remotePath);
-  return share?.url || upload.remotePath;
+
+  if (share?.url) {
+    // Nextcloud trick: tambahkan /download/nama-file di akhir URL share asli
+    // Contoh: https://drive.xxx.online/s/TOKEN menjadi https://drive.xxx.online/s/TOKEN/download/nama.png
+    const baseShareUrl = share.url.replace(/\/+$/, ''); // Hilangkan slash di akhir
+    return `${baseShareUrl}/download/${encodeURIComponent(finalFilename)}`;
+  }
+
+  return upload.remotePath;
 }
 
 async function assertActor(actorId) {
