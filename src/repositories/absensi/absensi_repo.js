@@ -45,13 +45,17 @@ const publicSelect = {
   },
 };
 
-export async function listAbsensi({ startAt, endAt, role, q, limit = 2000 }) {
+export async function listAbsensi({ startAt, endAt, role, q, id_user, limit = 2000 }) {
   const where = {
     waktu_masuk: {
       gte: startAt ?? undefined,
       lte: endAt ?? undefined,
     },
   };
+
+  if (id_user) {
+    where.id_user = id_user;
+  }
 
   if (role) {
     where.user = {

@@ -71,7 +71,7 @@ function serialize(row) {
   };
 }
 
-export async function listAbsensiService({ start_date, end_date, role, q, limit } = {}) {
+export async function listAbsensiService({ start_date, end_date, role, q, id_user, limit } = {}) {
   const normalizedRole = normalizeRole(role);
 
   const start = normalizeDateOrNull(start_date);
@@ -93,6 +93,7 @@ export async function listAbsensiService({ start_date, end_date, role, q, limit 
     role: normalizedRole,
     q,
     limit,
+    id_user,
   });
 
   return rows.map(serialize);

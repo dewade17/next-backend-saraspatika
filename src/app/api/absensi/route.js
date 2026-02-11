@@ -8,8 +8,18 @@ import { listAbsensiService } from '@/services/absensi/absensi_service.js';
 
 export const runtime = 'nodejs';
 
-async function requirePerm(resource, action) {
-  const token = (await cookies()).get('access_token')?.value;
+async function requirePerm(req, resource, action) {
+  const authHeader = req.headers.get('Authorization');
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+
+  if (!token) {
+    token = (await cookies()).get('access_token')?.value;
+  }
+
   if (!token) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
   let payload;
@@ -36,7 +46,7 @@ async function requirePerm(resource, action) {
 }
 
 export const GET = apiRoute(async (req) => {
-  await requirePerm('absensi', 'read');
+  const { id_user: loggedInUserId } = await requirePerm(req, 'absensi', 'read');
 
   const url = new URL(req.url);
   const role = url.searchParams.get('role') || null;
@@ -44,6 +54,7 @@ export const GET = apiRoute(async (req) => {
   const end_date = url.searchParams.get('end_date') || null;
   const q = url.searchParams.get('q') || '';
   const limit = url.searchParams.get('limit') || null;
+  const targetUserId = url.searchParams.get('userId')?.trim() || loggedInUserId;
 
   const data = await listAbsensiService({
     role,
@@ -51,6 +62,7 @@ export const GET = apiRoute(async (req) => {
     end_date,
     q,
     limit: limit ? Number(limit) : undefined,
+    id_user: targetUserId,
   });
 
   return NextResponse.json(
