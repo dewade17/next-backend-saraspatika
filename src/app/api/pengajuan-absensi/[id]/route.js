@@ -1,13 +1,60 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { apiRoute, parseBody } from '@/lib/api.js';
+import { apiRoute } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
-import { pengajuanUpdateStatusValidation } from '@/validations/pengajuan/pengajuan_validation.js';
-import { deletePengajuanAbsensiService, getPengajuanAbsensiByIdService, updateStatusPengajuanAbsensiService } from '@/services/pengajuan/pengajuan_service.js';
+import { pengajuanUpdateStatusValidation, pengajuanUpdateValidation } from '@/validations/pengajuan/pengajuan_validation.js';
+import { deletePengajuanAbsensiService, getPengajuanAbsensiByIdService, updatePengajuanAbsensiService, updateStatusPengajuanAbsensiService } from '@/services/pengajuan/pengajuan_service.js';
 
 export const runtime = 'nodejs';
+
+function getFormText(form, key, fallback = undefined) {
+  const value = form.get(key);
+  if (typeof value !== 'string') return fallback;
+  return value;
+}
+
+async function parsePengajuanPatchRequest(req) {
+  const contentType = req.headers.get('content-type') || '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const form = await req.formData();
+    const rawPayload = {
+      status: getFormText(form, 'status'),
+      admin_note: getFormText(form, 'admin_note'),
+      jenis_pengajuan: getFormText(form, 'jenis_pengajuan'),
+      tanggal_mulai: getFormText(form, 'tanggal_mulai'),
+      tanggal_selesai: getFormText(form, 'tanggal_selesai'),
+      alasan: getFormText(form, 'alasan'),
+      foto_bukti_url: getFormText(form, 'foto_bukti_url'),
+    };
+
+    const payload = Object.fromEntries(Object.entries(rawPayload).filter(([, value]) => value !== undefined));
+
+    const hasStatus = Object.prototype.hasOwnProperty.call(payload, 'status');
+
+    if (hasStatus) {
+      const input = await pengajuanUpdateStatusValidation.parseAsync(payload);
+      return { mode: 'status', input, file: null };
+    }
+
+    const input = await pengajuanUpdateValidation.parseAsync(payload);
+    const file = form.get('foto_bukti') || form.get('foto_bukti_url');
+    return { mode: 'data', input, file };
+  }
+
+  const json = await req.json();
+  const hasStatus = Object.prototype.hasOwnProperty.call(json, 'status');
+
+  if (hasStatus) {
+    const input = await pengajuanUpdateStatusValidation.parseAsync(json);
+    return { mode: 'status', input, file: null };
+  }
+
+  const input = await pengajuanUpdateValidation.parseAsync(json);
+  return { mode: 'data', input, file: null };
+}
 
 async function requirePerm(req, resource, action) {
   const authHeader = req.headers.get('Authorization');
@@ -68,8 +115,9 @@ export const PATCH = apiRoute(async (req, ctx) => {
   const params = await ctx.params;
   const id = params?.id;
 
-  const input = await parseBody(req, pengajuanUpdateStatusValidation);
-  const data = await updateStatusPengajuanAbsensiService(id, input, id_user);
+  const { mode, input, file } = await parsePengajuanPatchRequest(req);
+
+  const data = mode === 'status' ? await updateStatusPengajuanAbsensiService(id, input, id_user) : await updatePengajuanAbsensiService(id, input, file, id_user);
 
   return NextResponse.json(
     { ok: true, data },

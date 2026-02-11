@@ -140,6 +140,61 @@ export async function createPengajuanAbsensiService({ actor_id_user, input, file
   });
 }
 
+export async function updatePengajuanAbsensiService(id_pengajuan, input, file, actor_id_user) {
+  const id = String(id_pengajuan ?? '').trim();
+  if (!id) throw badRequest('ID pengajuan tidak valid', { code: 'id_pengajuan_invalid' });
+
+  const actor = await assertActor(actor_id_user);
+  const existing = await findPengajuanAbsensiById(id);
+
+  if (!existing) throw notFound('Pengajuan tidak ditemukan', { code: 'pengajuan_not_found' });
+
+  if (existing.id_user !== actor.id_user) {
+    throw forbidden('Anda tidak bisa mengubah pengajuan user lain', { code: 'forbidden_pengajuan_owner' });
+  }
+
+  if (existing.status !== 'MENUNGGU') {
+    throw forbidden('Pengajuan yang sudah diproses tidak dapat diubah', { code: 'forbidden_edit_processed_pengajuan' });
+  }
+
+  const data = {};
+
+  if (input.jenis_pengajuan !== undefined) {
+    data.jenis_pengajuan = normalizeJenis(input.jenis_pengajuan);
+  }
+
+  let tanggalMulai = existing.tanggal_mulai;
+  let tanggalSelesai = existing.tanggal_selesai;
+
+  if (input.tanggal_mulai !== undefined) {
+    tanggalMulai = normalizeDateUtc(input.tanggal_mulai, 'tanggal_mulai');
+    data.tanggal_mulai = tanggalMulai;
+  }
+
+  if (input.tanggal_selesai !== undefined) {
+    tanggalSelesai = normalizeDateUtc(input.tanggal_selesai, 'tanggal_selesai');
+    data.tanggal_selesai = tanggalSelesai;
+  }
+
+  if (tanggalSelesai < tanggalMulai) {
+    throw badRequest('tanggal_selesai tidak boleh lebih kecil dari tanggal_mulai', { code: 'invalid_date_range' });
+  }
+
+  if (input.alasan !== undefined) {
+    data.alasan = normalizeText(input.alasan);
+  }
+
+  const fotoBuktiUploadUrl = await uploadFotoBukti(file);
+
+  if (fotoBuktiUploadUrl) {
+    data.foto_bukti_url = fotoBuktiUploadUrl;
+  } else if (input.foto_bukti_url !== undefined) {
+    data.foto_bukti_url = normalizeText(input.foto_bukti_url);
+  }
+
+  return await updatePengajuanAbsensi(id, data);
+}
+
 export async function updateStatusPengajuanAbsensiService(id_pengajuan, input, actor_id_user) {
   const id = String(id_pengajuan ?? '').trim();
   if (!id) throw badRequest('ID pengajuan tidak valid', { code: 'id_pengajuan_invalid' });

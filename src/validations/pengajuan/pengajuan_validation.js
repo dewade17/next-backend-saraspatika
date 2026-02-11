@@ -21,10 +21,12 @@ const normalizedText = (max = 2000) =>
   }, z.string().min(1).max(max));
 
 const normalizedOptionalTextWithDefaultEmpty = (max = 2000) =>
-  z.preprocess((v) => {
-    if (v == null) return '';
-    return String(v).trim();
-  }, z.string().max(max)).default('');
+  z
+    .preprocess((v) => {
+      if (v == null) return '';
+      return String(v).trim();
+    }, z.string().max(max))
+    .default('');
 
 export const pengajuanCreateValidation = z.object({
   jenis_pengajuan: jenisPengajuanEnum,
@@ -38,5 +40,15 @@ export const pengajuanUpdateStatusValidation = z
   .object({
     status: requestStatusEnum,
     admin_note: normalizedText(2000).optional(),
+  })
+  .strict();
+
+export const pengajuanUpdateValidation = z
+  .object({
+    jenis_pengajuan: jenisPengajuanEnum.optional(),
+    tanggal_mulai: normalizedDate.optional(),
+    tanggal_selesai: normalizedDate.optional(),
+    alasan: z.string().trim().min(1).max(2000).optional(),
+    foto_bukti_url: normalizedText(2048).optional(),
   })
   .strict();
