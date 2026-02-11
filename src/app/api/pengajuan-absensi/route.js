@@ -9,6 +9,12 @@ import { createPengajuanAbsensiService, listPengajuanAbsensiService } from '@/se
 
 export const runtime = 'nodejs';
 
+function getFormText(form, key, fallback = '') {
+  const value = form.get(key);
+  if (typeof value !== 'string') return fallback;
+  return value;
+}
+
 async function requirePerm(req, resource, action) {
   const authHeader = req.headers.get('Authorization');
   let token = null;
@@ -52,11 +58,11 @@ async function parsePengajuanCreateRequest(req) {
   if (contentType.includes('multipart/form-data')) {
     const form = await req.formData();
     const payload = {
-      jenis_pengajuan: form.get('jenis_pengajuan'),
-      tanggal_mulai: form.get('tanggal_mulai'),
-      tanggal_selesai: form.get('tanggal_selesai'),
-      alasan: form.get('alasan'),
-      foto_bukti_url: form.get('foto_bukti_url'),
+      jenis_pengajuan: getFormText(form, 'jenis_pengajuan'),
+      tanggal_mulai: getFormText(form, 'tanggal_mulai'),
+      tanggal_selesai: getFormText(form, 'tanggal_selesai'),
+      alasan: getFormText(form, 'alasan'),
+      foto_bukti_url: getFormText(form, 'foto_bukti_url'),
     };
 
     const input = await pengajuanCreateValidation.parseAsync(payload);

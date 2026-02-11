@@ -20,12 +20,18 @@ const normalizedText = (max = 2000) =>
     return s || undefined;
   }, z.string().min(1).max(max));
 
+const normalizedOptionalTextWithDefaultEmpty = (max = 2000) =>
+  z.preprocess((v) => {
+    if (v == null) return '';
+    return String(v).trim();
+  }, z.string().max(max)).default('');
+
 export const pengajuanCreateValidation = z.object({
   jenis_pengajuan: jenisPengajuanEnum,
   tanggal_mulai: normalizedDate,
   tanggal_selesai: normalizedDate,
   alasan: z.string().trim().min(1).max(2000),
-  foto_bukti_url: normalizedText(2048).optional(),
+  foto_bukti_url: normalizedOptionalTextWithDefaultEmpty(2048),
 });
 
 export const pengajuanUpdateStatusValidation = z
