@@ -30,6 +30,11 @@ enum JenisPengajuan {
   CUTI
 }
 
+enum KategoriAgenda {
+  KERJA
+  MENGAJAR
+}
+
 model User {
   id_user         String   @id @default(uuid())
   email           String   @unique
@@ -281,13 +286,14 @@ model PengajuanAbsensi {
 }
 
 model Agenda {
-  id_agenda           String   @id @default(uuid())
+  id_agenda           String         @id @default(uuid())
   id_user             String
-  deskripsi           String   @db.Text
-  tanggal             DateTime @db.Date
-  jam_mulai           DateTime @db.Time
-  jam_selesai         DateTime @db.Time
-  bukti_pendukung_url String?  @db.Text // Opsional: Untuk link foto atau dokumen kegiatan
+  kategori_agenda     KategoriAgenda // Menggunakan enum KERJA atau MENGAJAR
+  deskripsi           String         @db.Text
+  tanggal             DateTime       @db.Date
+  jam_mulai           DateTime       @db.Time
+  jam_selesai         DateTime       @db.Time
+  bukti_pendukung_url String?        @db.Text
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

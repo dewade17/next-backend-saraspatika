@@ -1,7 +1,7 @@
 import { badRequest, forbidden, notFound } from '@/lib/error.js';
 import { formatToDbDate } from '@/lib/date_helper.js';
 import { compareTime, combineDateAndTime } from '@/lib/time_helper.js';
-import { uploadToNextcloud } from '@/lib/storage.js';
+import { uploadToNextcloud } from '@/app/api/agenda/helper.js';
 import { create, findById, findMany, remove, update } from '@/repositories/agenda/agenda_repo.js';
 
 function normalizeUserId(id_user) {
