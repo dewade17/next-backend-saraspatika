@@ -53,6 +53,7 @@ model User {
   admin_decisions   FaceResetRequest[]       @relation("AdminDecisions")
   pengajuans        PengajuanAbsensi[]       @relation("UserPengajuan")
   persetujuans_adm  PengajuanAbsensi[]       @relation("AdminPersetujuan")
+  agendas           Agenda[]
 
   @@map("users")
 }
@@ -277,4 +278,22 @@ model PengajuanAbsensi {
   admin User? @relation("AdminPersetujuan", fields: [id_admin], references: [id_user])
 
   @@map("pengajuan_absensi")
+}
+
+model Agenda {
+  id_agenda           String   @id @default(uuid())
+  id_user             String
+  deskripsi           String   @db.Text
+  tanggal             DateTime @db.Date
+  jam_mulai           DateTime @db.Time
+  jam_selesai         DateTime @db.Time
+  bukti_pendukung_url String?  @db.Text // Opsional: Untuk link foto atau dokumen kegiatan
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relasi ke User
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@map("agenda")
 }
