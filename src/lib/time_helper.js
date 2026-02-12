@@ -11,6 +11,8 @@
  *   (tidak melempar error) agar aplikasi tidak crash.
  */
 
+import { formatToDbDate } from '@/lib/date_helper.js';
+
 const EPOCH_YEAR = 1970;
 const EPOCH_MONTH = 0; // Januari (0-based)
 const EPOCH_DAY = 1;
@@ -198,4 +200,24 @@ export function calculateDuration(start, end) {
   const hours = diffMs / MS_PER_HOUR;
 
   return { minutes, hours };
+}
+
+/**
+ * Menggabungkan tanggal (YYYY-MM-DD/Date) dan jam (HH:mm/HH:mm:ss) menjadi objek Date UTC.
+ * @param {string|Date} dateValue
+ * @param {string|Date|number} timeValue
+ * @returns {Date|null}
+ */
+export function combineDateAndTime(dateValue, timeValue) {
+  const dbDate = formatToDbDate(dateValue);
+  if (!dbDate) return null;
+
+  const time = parseToDate(timeValue);
+  if (!time) return null;
+
+  const hours = String(time.getUTCHours()).padStart(2, '0');
+  const minutes = String(time.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(time.getUTCSeconds()).padStart(2, '0');
+
+  return new Date(`${dbDate}T${hours}:${minutes}:${seconds}.000Z`);
 }
