@@ -54,7 +54,9 @@ export const GET = apiRoute(async (req) => {
   const end_date = url.searchParams.get('end_date') || null;
   const q = url.searchParams.get('q') || '';
   const limit = url.searchParams.get('limit') || null;
-  const targetUserId = url.searchParams.get('userId')?.trim() || loggedInUserId;
+
+  const userIdParam = url.searchParams.get('userId')?.trim();
+  const targetUserId = userIdParam || (role ? null : loggedInUserId);
 
   const data = await listAbsensiService({
     role,

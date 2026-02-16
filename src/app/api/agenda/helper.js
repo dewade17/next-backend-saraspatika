@@ -23,5 +23,11 @@ export async function uploadToNextcloud(file, options = {}) {
   });
 
   const share = await storage.createPublicShare(upload.remotePath);
-  return share?.url || upload.remotePath;
+
+  if (share?.url) {
+    const baseShareUrl = share.url.replace(/\/+$/, '');
+    return `${baseShareUrl}/download/${encodeURIComponent(filename)}`;
+  }
+
+  return upload.remotePath;
 }

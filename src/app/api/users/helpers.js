@@ -27,14 +27,21 @@ async function uploadFotoProfilOrThrow(file) {
   if (file.size === 0) return null;
 
   const upload = await storage.upload({
-    data: file, // File/Blob langsung (Storage akan buffer-kan + validasi size)
+    data: file,
     filename: file.name || 'foto-profil.png',
     folder: 'foto_profil',
   });
 
   const share = await storage.createPublicShare(upload.remotePath);
 
-  return share?.url || upload.remotePath;
+  let photoUrl = share?.url || upload.remotePath;
+
+  if (photoUrl && photoUrl.includes('/s/')) {
+    const baseUrl = photoUrl.split('?')[0];
+    photoUrl = baseUrl.endsWith('/') ? `${baseUrl}download` : `${baseUrl}/download`;
+  }
+
+  return photoUrl;
 }
 
 export async function parseUserRequest(req, schema) {

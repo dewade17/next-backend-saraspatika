@@ -3,6 +3,7 @@ import { formatToDbDate } from '@/lib/date_helper.js';
 import { compareTime, combineDateAndTime } from '@/lib/time_helper.js';
 import { uploadToNextcloud } from '@/app/api/agenda/helper.js';
 import { create, findById, findMany, remove, update } from '@/repositories/agenda/agenda_repo.js';
+import { findById as findUserById } from '@/repositories/users/user_repo.js';
 
 function normalizeUserId(id_user) {
   const id = String(id_user || '').trim();
@@ -53,6 +54,26 @@ async function uploadBuktiPendukung(file) {
   });
 }
 
+function resolveKategoriAgendaByRole(role) {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toUpperCase();
+
+  if (normalizedRole === 'GURU') return 'MENGAJAR';
+  if (normalizedRole === 'KEPALA_SEKOLAH' || normalizedRole === 'PEGAWAI') return 'KERJA';
+
+  throw forbidden('Role user tidak diizinkan membuat agenda', { code: 'agenda_role_forbidden' });
+}
+
+async function getKategoriAgendaByUserId(id_user) {
+  const user = await findUserById(id_user);
+  if (!user) {
+    throw notFound('User tidak ditemukan', { code: 'user_not_found' });
+  }
+
+  return resolveKategoriAgendaByRole(user.role);
+}
+
 async function getAgendaOwnedOrThrow(id_agenda, actor_id_user) {
   const agenda = await findById(String(id_agenda || '').trim());
   if (!agenda) {
@@ -69,6 +90,7 @@ async function getAgendaOwnedOrThrow(id_agenda, actor_id_user) {
 
 export async function createAgendaService({ actor_id_user, input, file }) {
   const id_user = normalizeUserId(actor_id_user);
+  const kategori_agenda = await getKategoriAgendaByUserId(id_user);
 
   assertTimeRange(input.jam_mulai, input.jam_selesai);
 
@@ -77,6 +99,7 @@ export async function createAgendaService({ actor_id_user, input, file }) {
   return await create({
     id_user,
     deskripsi: input.deskripsi,
+    kategori_agenda,
     tanggal: toTanggalDate(input.tanggal),
     jam_mulai: toAgendaDateTime(input.tanggal, input.jam_mulai, 'jam_mulai'),
     jam_selesai: toAgendaDateTime(input.tanggal, input.jam_selesai, 'jam_selesai'),
@@ -99,6 +122,7 @@ export async function updateAgendaService(id_agenda, actor_id_user, input, file)
   assertTimeRange(jamMulaiInput, jamSelesaiInput);
 
   const data = {};
+  data.kategori_agenda = await getKategoriAgendaByUserId(agenda.id_user);
 
   if (input.deskripsi !== undefined) data.deskripsi = input.deskripsi;
   if (input.tanggal !== undefined) data.tanggal = toTanggalDate(input.tanggal);

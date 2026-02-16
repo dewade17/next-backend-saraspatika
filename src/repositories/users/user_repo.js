@@ -44,6 +44,10 @@ export async function getUserById(id_user) {
   });
 }
 
+export async function findById(id_user) {
+  return await getUserById(id_user);
+}
+
 export async function createUserWithRole({ email, name, password_hash, status, nomor_handphone, nip, foto_profil_url, role_name }) {
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({

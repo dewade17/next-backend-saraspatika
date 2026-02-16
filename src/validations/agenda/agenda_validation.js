@@ -33,5 +33,13 @@ export const agendaSchema = z
     tanggal: tanggalSchema,
     jam_mulai: jamSchema,
     jam_selesai: jamSchema,
+    bukti_pendukung_url: z.string().max(2048).optional().nullable(),
+  })
+  .strict();
+
+export const agendaUpdateSchema = agendaSchema
+  .partial()
+  .extend({
+    bukti_pendukung_url: z.string().trim().max(2048, 'URL bukti pendukung maksimal 2048 karakter').optional(),
   })
   .strict();

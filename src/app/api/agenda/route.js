@@ -1,15 +1,26 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { apiRoute } from '@/lib/api.js';
-import { unauthorized } from '@/lib/error.js';
+import { unauthorized, forbidden } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
+import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
 import { agendaSchema } from '@/validations/agenda/agenda_validation.js';
 import { createAgendaService, listAgendaService } from '@/services/agenda/agenda_service.js';
 
 export const runtime = 'nodejs';
 
-async function getUserFromToken() {
-  const token = (await cookies()).get('access_token')?.value;
+async function requirePerm(req, resource, action) {
+  const authHeader = req.headers.get('Authorization');
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+
+  if (!token) {
+    token = (await cookies()).get('access_token')?.value;
+  }
+
   if (!token) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
   let payload;
@@ -21,6 +32,17 @@ async function getUserFromToken() {
 
   const id_user = String(payload?.sub || '').trim();
   if (!id_user) throw unauthorized('Unauthorized', { code: 'unauthorized' });
+
+  const perms = payload?.perms || [];
+  let allowed = canFromClaims(perms, resource, action);
+
+  if (!allowed) {
+    const set = await getPermSet(id_user);
+    allowed = set.has(`${String(resource).toLowerCase()}:${String(action).toLowerCase()}`);
+  }
+
+  if (!allowed) throw forbidden('Forbidden', { code: 'forbidden' });
+
   return { id_user };
 }
 
@@ -56,15 +78,15 @@ async function parseAgendaCreateRequest(req) {
   return { input, file: null };
 }
 
-export const GET = apiRoute(async () => {
-  const { id_user } = await getUserFromToken();
+export const GET = apiRoute(async (req) => {
+  const { id_user } = await requirePerm(req, 'agenda', 'read');
   const data = await listAgendaService(id_user);
 
   return NextResponse.json({ data, message: 'Berhasil mengambil daftar agenda' }, { headers: { 'Cache-Control': 'no-store' } });
 });
 
 export const POST = apiRoute(async (req) => {
-  const { id_user } = await getUserFromToken();
+  const { id_user } = await requirePerm(req, 'agenda', 'create');
   const { input, file } = await parseAgendaCreateRequest(req);
 
   const data = await createAgendaService({

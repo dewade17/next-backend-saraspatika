@@ -1,23 +1,26 @@
-import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { apiRoute } from '@/lib/api.js';
-import { badRequest, unauthorized } from '@/lib/error.js';
+import { badRequest, unauthorized, forbidden } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
-import { agendaSchema } from '@/validations/agenda/agenda_validation.js';
+import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
+import { agendaUpdateSchema } from '@/validations/agenda/agenda_validation.js';
 import { deleteAgendaService, updateAgendaService } from '@/services/agenda/agenda_service.js';
 
 export const runtime = 'nodejs';
 
-const agendaUpdateSchema = agendaSchema
-  .partial()
-  .extend({
-    bukti_pendukung_url: z.string().trim().max(2048, 'URL bukti pendukung maksimal 2048 karakter').optional(),
-  })
-  .strict();
+async function requirePerm(req, resource, action) {
+  const authHeader = req.headers.get('Authorization');
+  let token = null;
 
-async function getUserFromToken() {
-  const token = (await cookies()).get('access_token')?.value;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+
+  if (!token) {
+    token = (await cookies()).get('access_token')?.value;
+  }
+
   if (!token) throw unauthorized('Unauthorized', { code: 'unauthorized' });
 
   let payload;
@@ -29,6 +32,17 @@ async function getUserFromToken() {
 
   const id_user = String(payload?.sub || '').trim();
   if (!id_user) throw unauthorized('Unauthorized', { code: 'unauthorized' });
+
+  const perms = payload?.perms || [];
+  let allowed = canFromClaims(perms, resource, action);
+
+  if (!allowed) {
+    const set = await getPermSet(id_user);
+    allowed = set.has(`${String(resource).toLowerCase()}:${String(action).toLowerCase()}`);
+  }
+
+  if (!allowed) throw forbidden('Forbidden', { code: 'forbidden' });
+
   return { id_user };
 }
 
@@ -66,7 +80,7 @@ async function parseAgendaPatchRequest(req) {
 }
 
 export const PATCH = apiRoute(async (req, ctx) => {
-  const { id_user } = await getUserFromToken();
+  const { id_user } = await requirePerm(req, 'agenda', 'update');
   const params = await ctx.params;
   const id = String(params?.id || '').trim();
   if (!id) throw badRequest('ID agenda tidak valid', { code: 'id_agenda_invalid' });
@@ -77,8 +91,8 @@ export const PATCH = apiRoute(async (req, ctx) => {
   return NextResponse.json({ ok: true, data, message: 'Agenda berhasil diperbarui' }, { headers: { 'Cache-Control': 'no-store' } });
 });
 
-export const DELETE = apiRoute(async (_req, ctx) => {
-  const { id_user } = await getUserFromToken();
+export const DELETE = apiRoute(async (req, ctx) => {
+  const { id_user } = await requirePerm(req, 'agenda', 'delete');
   const params = await ctx.params;
   const id = String(params?.id || '').trim();
   if (!id) throw badRequest('ID agenda tidak valid', { code: 'id_agenda_invalid' });

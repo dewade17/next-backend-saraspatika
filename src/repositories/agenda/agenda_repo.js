@@ -4,6 +4,7 @@ const agendaSelect = {
   id_agenda: true,
   id_user: true,
   deskripsi: true,
+  kategori_agenda: true,
   tanggal: true,
   jam_mulai: true,
   jam_selesai: true,
