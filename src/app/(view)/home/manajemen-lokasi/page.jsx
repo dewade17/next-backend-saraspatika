@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Empty, Grid } from 'antd';
 import { EnvironmentOutlined, PlusOutlined } from '@ant-design/icons';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
@@ -9,7 +8,7 @@ import AppSpace from '@/app/(view)/components_shared/AppSpace.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
-import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
+import AppEmpty from '@/app/(view)/components_shared/AppEmpty.jsx';
 import AppFloatButton from '@/app/(view)/components_shared/AppFloatButton.jsx';
 import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
 import AppTypography, { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
@@ -23,7 +22,7 @@ import { useDeleteLocation } from './_hooks/useDeleteLocation';
 import { matchesQuery } from './_utils/locationHelpers';
 
 export default function ManajemenLokasiPage() {
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   const { locations, loading, q, setQ, message, fetchLocations, client } = useFetchLocations();
@@ -137,7 +136,7 @@ export default function ManajemenLokasiPage() {
             style={{ borderRadius: 10 }}
             styles={{ body: { padding: 24 } }}
           >
-            <Empty description={locations.length === 0 ? 'Belum ada lokasi.' : 'Tidak ada hasil pencarian.'} />
+            <AppEmpty description={locations.length === 0 ? 'Belum ada lokasi.' : 'Tidak ada hasil pencarian.'} />
           </AppCard>
         ) : (
           <AppGrid

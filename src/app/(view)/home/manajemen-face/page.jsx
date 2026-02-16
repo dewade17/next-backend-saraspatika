@@ -1,16 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Grid, Tag, Statistic, Card, Row, Col, Modal } from 'antd';
 import { DeleteOutlined, HistoryOutlined, UserOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
+import AppGrid, { AppCol, AppRow } from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
+import AppTag from '@/app/(view)/components_shared/AppTag.jsx';
+import AppStatistic from '@/app/(view)/components_shared/AppStatistic.jsx';
 import AppTypography, { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
+import { AppModalStatic } from '@/app/(view)/components_shared/AppModal.jsx';
 import { useFetchFaceResetRequests } from './_hooks/useFetchFaceResetRequest';
 import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useDeleteFace } from './_hooks/useDeleteFace';
@@ -18,7 +21,7 @@ import { formatFaceRegistration } from '@/lib/date_helper.js';
 import { useUpdateFaceResetRequest } from './_hooks/useUpdateFaceResetRequest';
 
 export default function ManajemenFacePage() {
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   // '1' untuk Data Terdaftar, '2' untuk Request Reset
@@ -41,7 +44,7 @@ export default function ManajemenFacePage() {
     (record) => {
       const noteRef = { current: '' };
 
-      Modal.confirm({
+      AppModalStatic.confirm({
         title: 'Tolak permintaan reset?',
         centered: true,
         okText: 'Tolak',
@@ -151,7 +154,7 @@ export default function ManajemenFacePage() {
           const colors = { MENUNGGU: 'orange', SETUJU: 'green', DISETUJUI: 'green', DITOLAK: 'red' };
           const labels = { SETUJU: 'DISETUJUI' };
           const statusLabel = labels[record.status] || record.status;
-          return <Tag color={colors[record.status] || 'default'}>{statusLabel}</Tag>;
+          return <AppTag color={colors[record.status] || 'default'}>{statusLabel}</AppTag>;
         },
       },
       {
@@ -200,15 +203,15 @@ export default function ManajemenFacePage() {
       </AppFlex>
 
       {/* Bagian Navigasi Statistik (Pengganti Tabs) */}
-      <Row
+      <AppRow
         gutter={[16, 16]}
         style={{ marginBottom: 24 }}
       >
-        <Col
+        <AppCol
           xs={24}
           sm={12}
         >
-          <Card
+          <AppCard
             hoverable
             onClick={() => setActiveView('1')}
             style={{
@@ -217,18 +220,18 @@ export default function ManajemenFacePage() {
               background: activeView === '1' ? '#f0f5ff' : '#fff',
             }}
           >
-            <Statistic
+            <AppStatistic
               title='Total Data Terdaftar'
               value={stats.totalActive}
               prefix={<UserOutlined style={{ color: '#1677ff' }} />}
             />
-          </Card>
-        </Col>
-        <Col
+          </AppCard>
+        </AppCol>
+        <AppCol
           xs={24}
           sm={12}
         >
-          <Card
+          <AppCard
             hoverable
             onClick={() => setActiveView('2')}
             style={{
@@ -237,15 +240,15 @@ export default function ManajemenFacePage() {
               background: activeView === '2' ? '#fff1f0' : '#fff',
             }}
           >
-            <Statistic
+            <AppStatistic
               title='Permintaan Reset (Pending)'
               value={stats.pendingCount}
               valueStyle={{ color: stats.pendingCount > 0 ? '#cf1322' : '#3f8600' }}
               prefix={<HistoryOutlined />}
             />
-          </Card>
-        </Col>
-      </Row>
+          </AppCard>
+        </AppCol>
+      </AppRow>
 
       {/* Kontainer Tabel */}
       <AppCard

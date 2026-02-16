@@ -107,9 +107,15 @@ export async function createAgendaService({ actor_id_user, input, file }) {
   });
 }
 
-export async function listAgendaService(actor_id_user) {
-  const id_user = normalizeUserId(actor_id_user);
-  return await findMany({ id_user });
+export async function listAgendaService(params = {}) {
+  const hasUserFilter = Object.prototype.hasOwnProperty.call(params || {}, 'id_user');
+  const id_user = hasUserFilter ? normalizeUserId(params?.id_user) : undefined;
+  const kategori_agenda = normalizeOptionalText(params?.kategori_agenda)?.toUpperCase();
+
+  return await findMany({
+    id_user,
+    kategori_agenda,
+  });
 }
 
 export async function updateAgendaService(id_agenda, actor_id_user, input, file) {

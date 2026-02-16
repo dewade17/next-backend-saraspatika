@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Grid } from 'antd';
+import { Col, Grid, Row } from 'antd';
 
 const DEFAULT_FONT_FAMILY = 'var(--font-poppins)';
 const BP_KEYS = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
@@ -293,6 +293,30 @@ export const AppGrid = React.forwardRef(function AppGrid(
   );
 });
 
+export function useAppBreakpoint() {
+  return Grid.useBreakpoint();
+}
+
+export const AppRow = React.forwardRef(function AppRow({ style, ...rest }, ref) {
+  return (
+    <Row
+      ref={ref}
+      style={{ fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
+      {...rest}
+    />
+  );
+});
+
+export const AppCol = React.forwardRef(function AppCol({ style, ...rest }, ref) {
+  return (
+    <Col
+      ref={ref}
+      style={{ fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
+      {...rest}
+    />
+  );
+});
+
 export function AppGridItem({
   children,
   col, // number | "span 2" | "1 / span 3" | "1 / 4"
@@ -370,5 +394,8 @@ export function AutoGrid(props) {
 AppGrid.Item = AppGridItem;
 AppGrid.Simple = SimpleGrid;
 AppGrid.Auto = AutoGrid;
+AppGrid.useBreakpoint = useAppBreakpoint;
+AppGrid.Row = AppRow;
+AppGrid.Col = AppCol;
 
 export default AppGrid;

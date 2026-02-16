@@ -1,15 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Typography } from 'antd';
 
 import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
+import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 
 import { buildOsmEmbedUrl, buildOsmLink } from '../_utils/absensiHelpers.js';
-
-const { Text } = Typography;
 
 export default function LocationMapModal({ open, onOpenChange, title, lokasiName, latitude, longitude }) {
   const embedUrl = React.useMemo(() => buildOsmEmbedUrl(latitude, longitude), [latitude, longitude]);
@@ -29,11 +27,19 @@ export default function LocationMapModal({ open, onOpenChange, title, lokasiName
         style={{ width: '100%' }}
       >
         <div>
-          <Text strong>{lokasiName || 'Koordinat'}</Text>
+          <AppTypography
+            as='text'
+            strong
+          >
+            {lokasiName || 'Koordinat'}
+          </AppTypography>
           <div style={{ marginTop: 4 }}>
-            <Text type='secondary'>
+            <AppTypography
+              as='text'
+              tone='secondary'
+            >
               Latitude: {latitude ?? '-'} | Longitude: {longitude ?? '-'}
-            </Text>
+            </AppTypography>
           </div>
         </div>
 
@@ -56,7 +62,12 @@ export default function LocationMapModal({ open, onOpenChange, title, lokasiName
             />
           </div>
         ) : (
-          <Text type='secondary'>Koordinat belum tersedia.</Text>
+          <AppTypography
+            as='text'
+            tone='secondary'
+          >
+            Koordinat belum tersedia.
+          </AppTypography>
         )}
       </AppFlex>
     </AppModal>

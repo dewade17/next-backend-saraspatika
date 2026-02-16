@@ -1,34 +1,29 @@
 'use client';
 
 import React from 'react';
-import { Grid } from 'antd';
-import { FileImageOutlined, ReloadOutlined } from '@ant-design/icons';
+import { FileImageOutlined } from '@ant-design/icons';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppSpace from '@/app/(view)/components_shared/AppSpace.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
+import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
-import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
-import AppImage from '@/app/(view)/components_shared/AppImage.jsx';
 
 import { useAuth } from '@/app/(view)/home/providerAuth.jsx';
 import { useFetchAgenda } from './_hooks/useFetchAgenda.js';
 import { formatUtcDateIdLong, formatUtcTimeDot, pickAgendaAvatarUrl, pickAgendaDisplayName } from './_utils/agendaFormatters.js';
 
 export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilter, nameColumnTitle = 'Nama' }) {
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   const { user } = useAuth();
-  const fallbackName = user?.nama_pengguna || '-';
+  const fallbackName = user?.nama_pengguna || user?.name || '-';
 
-  const { rows, loading, fetchAgenda } = useFetchAgenda();
-
-  const [selectedRowKeys, setSelectedRowKeys] = React.useState([]);
-  const [previewUrl, setPreviewUrl] = React.useState(null);
+  const { rows, loading } = useFetchAgenda(kategoriFilter);
 
   const filteredRows = React.useMemo(() => {
     const list = Array.isArray(rows) ? rows : [];
@@ -43,7 +38,7 @@ export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilte
         key: 'nama',
         width: 320,
         render: (_, record) => {
-          const displayName = pickAgendaDisplayName(record, fallbackName);
+          const displayName = record?.user?.name || pickAgendaDisplayName(record, fallbackName);
           const avatarUrl = pickAgendaAvatarUrl(record);
 
           return (
@@ -97,10 +92,10 @@ export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilte
             type='text'
             icon={<FileImageOutlined />}
             disabled={!url}
-            tooltip={url ? 'Lihat bukti foto' : 'Tidak ada bukti foto'}
+            tooltip={url ? 'Buka bukti foto di halaman baru' : 'Tidak ada bukti foto'}
             onClick={() => {
               if (!url) return;
-              setPreviewUrl(String(url));
+              window.open(String(url), '_blank', 'noopener,noreferrer');
             }}
           />
         ),
@@ -186,31 +181,15 @@ export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilte
                 </AppTypography>
               ) : null}
             </div>
-
-            <AppFlex
-              align='center'
-              gap='sm'
-              wrap
-            >
-              <AppButton
-                icon={<ReloadOutlined />}
-                onClick={fetchAgenda}
-              >
-                Refresh
-              </AppButton>
-            </AppFlex>
           </AppFlex>
 
           <AppCard>
             <AppTable
-              rowKey={(r) => r?.id_agenda || `${r?.tanggal || ''}-${r?.jam_mulai || ''}-${Math.random()}`}
+              showToolbar={false}
+              rowKey={(r) => r?.id_agenda || `${r?.tanggal || ''}-${r?.jam_mulai || ''}-${r?.jam_selesai || ''}`}
               loading={loading}
               columns={columns}
               dataSource={filteredRows}
-              rowSelection={{
-                selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(Array.isArray(keys) ? keys : []),
-              }}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
@@ -219,30 +198,6 @@ export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilte
           </AppCard>
         </AppSpace>
       </div>
-
-      <AppModal
-        title='Bukti Foto'
-        open={!!previewUrl}
-        onOpenChange={(open) => {
-          if (!open) setPreviewUrl(null);
-        }}
-        footer={false}
-        centered
-        destroyOnClose
-      >
-        {previewUrl ? (
-          <div style={{ width: '100%' }}>
-            <AppImage
-              src={previewUrl}
-              alt='Bukti foto agenda'
-              style={{ width: '100%' }}
-            />
-            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-              <AppButton onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}>Buka Tab Baru</AppButton>
-            </div>
-          </div>
-        ) : null}
-      </AppModal>
     </div>
   );
 }

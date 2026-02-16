@@ -1,5 +1,4 @@
 import React from 'react';
-import { Form } from 'antd';
 
 import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
@@ -10,7 +9,7 @@ import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppTimePicker from '@/app/(view)/components_shared/AppTimePicker.jsx';
 
 export default function PolaKerjaFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSubmitting }) {
-  const [form] = Form.useForm();
+  const form = AppForm.useForm();
   const isCreate = mode === 'create';
 
   React.useEffect(() => {

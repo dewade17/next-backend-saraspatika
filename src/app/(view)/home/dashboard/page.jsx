@@ -9,6 +9,7 @@ import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppImage from '@/app/(view)/components_shared/AppImage.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
+import { useDashboardData } from './_hooks/useDashboardData.js';
 
 function StatCard({ value, label, icon }) {
   return (
@@ -83,6 +84,7 @@ function StatCard({ value, label, icon }) {
 export default function DashboardPage() {
   const screens = Grid.useBreakpoint();
   const isMdUp = !!screens?.md;
+  const { profile, stats, loading } = useDashboardData();
 
   return (
     <div style={{ width: '100%' }}>
@@ -125,7 +127,7 @@ export default function DashboardPage() {
                   wordBreak: 'break-word',
                 }}
               >
-                SD Saraswati 4 Denpasar
+                {profile?.nama_sekolah || '-'}
               </AppTypography>
 
               <AppTypography
@@ -137,7 +139,7 @@ export default function DashboardPage() {
                   wordBreak: 'break-word',
                 }}
               >
-                No. Telephone: <span style={{ fontWeight: 600 }}>(0361) 4747701</span>
+                No. Telephone: <span style={{ fontWeight: 600 }}>{profile?.no_telepon || '-'}</span>
               </AppTypography>
 
               <AppTypography
@@ -149,7 +151,7 @@ export default function DashboardPage() {
                   wordBreak: 'break-word',
                 }}
               >
-                Alamat: Jl. Tukad Barito V No.16, Renon, Denpasar Selatan
+                Alamat: {profile?.alamat_sekolah || '-'}
               </AppTypography>
 
               <AppTypography
@@ -157,7 +159,7 @@ export default function DashboardPage() {
                 tone='secondary'
                 style={{ display: 'block', wordBreak: 'break-word' }}
               >
-                NPSN: 50103258
+                NPSN: {profile?.npsn || '-'}
               </AppTypography>
             </div>
           </AppGrid>
@@ -168,22 +170,22 @@ export default function DashboardPage() {
           gap={16}
         >
           <StatCard
-            value='36'
+            value={loading ? '...' : String(stats.guruPegawai)}
             label={'Guru &\nPegawai'}
             icon={<UserOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
           />
           <StatCard
-            value='5'
+            value={loading ? '...' : String(stats.verifikasiPengajuan)}
             label={'Verifikasi\nIzin/Sakit/Cuti'}
             icon={<CheckCircleOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
           />
           <StatCard
-            value='15'
+            value={loading ? '...' : String(stats.agendaMengajar)}
             label={'Agenda\nMengajar'}
             icon={<ProfileOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
           />
           <StatCard
-            value='10'
+            value={loading ? '...' : String(stats.agendaKerja)}
             label={'Agenda Kerja'}
             icon={<CalendarOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
           />

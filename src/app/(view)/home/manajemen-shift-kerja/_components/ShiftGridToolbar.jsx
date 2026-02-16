@@ -2,7 +2,7 @@
 
 import React from 'react';
 import dayjs from 'dayjs';
-import { Select, DatePicker } from 'antd';
+import AppDatePicker from '@/app/(view)/components_shared/AppDatePicker.jsx';
 
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 
@@ -43,8 +43,9 @@ export default function ShiftGridToolbar({ monthAnchor, onPickMonth, onPrevWeek,
         </div>
 
         {/* Pemilih Bulan */}
-        <DatePicker
+        <AppDatePicker
           picker='month'
+          block={false}
           value={dayjs(monthAnchor)}
           onChange={(v) => {
             if (!v) return;

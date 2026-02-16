@@ -1,9 +1,9 @@
 import React from 'react';
-import { Tag, Button } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
+import AppTag from '@/app/(view)/components_shared/AppTag.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import { STATUS_LABEL, STATUS_TAG_COLOR, JENIS_LABEL } from '../_utils/constants.js';
 import { toIdDate } from '../_utils/helper.js';
@@ -32,12 +32,12 @@ export default function SummaryCard({ item, onApprove, onReject, busy }) {
           >
             {item?.user?.name || '-'}
           </AppTypography>
-          <Tag
+          <AppTag
             color={STATUS_TAG_COLOR[status] || 'default'}
             style={{ marginInlineEnd: 0 }}
           >
             {STATUS_LABEL[status] || status}
-          </Tag>
+          </AppTag>
         </div>
 
         <AppTypography as='text'>
@@ -65,7 +65,7 @@ export default function SummaryCard({ item, onApprove, onReject, busy }) {
             <b>Bukti Pendukung</b>:
           </AppTypography>
           {item?.foto_bukti_url ? (
-            <Button
+            <AppButton
               type='link'
               size='small'
               icon={<EyeOutlined />}

@@ -303,3 +303,16 @@ model Agenda {
 
   @@map("agenda")
 }
+
+model ProfileSekolah {
+  id_profile     String  @id @default(uuid())
+  nama_sekolah   String
+  no_telepon     String?
+  alamat_sekolah String  @db.Text
+  npsn           String  @unique
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("profile_sekolah")
+}

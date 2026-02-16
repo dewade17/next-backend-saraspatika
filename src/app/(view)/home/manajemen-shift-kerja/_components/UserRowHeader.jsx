@@ -1,11 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Avatar, Typography } from 'antd';
+import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
+import { Text } from '@/app/(view)/components_shared/AppTypography.jsx';
 
 import { toDateKey } from '../_utils/date.js';
-
-const { Text } = Typography;
 
 function getUserName(u) {
   return String(u?.name ?? 'Tanpa Nama');
@@ -70,13 +69,13 @@ export default function UserRowHeader({ user, weekDates, assignments, patterns }
   return (
     <div className='w-full'>
       <div className='flex items-center gap-3'>
-        <Avatar
+        <AppAvatar
           size={44}
           src={avatarSrc(user)}
           style={{ backgroundColor: '#e5e7eb', color: '#111827' }}
         >
           {name?.[0]?.toUpperCase?.() || 'U'}
-        </Avatar>
+        </AppAvatar>
 
         <div className='min-w-0'>
           <div className='font-semibold text-slate-800 truncate'>{name}</div>

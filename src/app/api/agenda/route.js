@@ -79,9 +79,14 @@ async function parseAgendaCreateRequest(req) {
 }
 
 export const GET = apiRoute(async (req) => {
-  const { id_user } = await requirePerm(req, 'agenda', 'read');
-  const data = await listAgendaService(id_user);
+  await requirePerm(req, 'agenda', 'read');
+  const kategori_agenda = req.nextUrl.searchParams.get('kategori')?.trim() || undefined;
+  const id_user = req.nextUrl.searchParams.get('id_user')?.trim() || undefined;
 
+  const data = await listAgendaService({
+    ...(id_user ? { id_user } : {}),
+    ...(kategori_agenda ? { kategori_agenda } : {}),
+  });
   return NextResponse.json({ data, message: 'Berhasil mengambil daftar agenda' }, { headers: { 'Cache-Control': 'no-store' } });
 });
 

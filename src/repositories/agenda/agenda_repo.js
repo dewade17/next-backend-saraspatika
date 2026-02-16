@@ -11,6 +11,12 @@ const agendaSelect = {
   bukti_pendukung_url: true,
   created_at: true,
   updated_at: true,
+  user: {
+    select: {
+      name: true,
+      foto_profil_url: true,
+    },
+  },
 };
 
 export async function create(data) {
@@ -20,9 +26,10 @@ export async function create(data) {
   });
 }
 
-export async function findMany({ id_user } = {}) {
+export async function findMany({ kategori_agenda, id_user } = {}) {
   const where = {};
   if (id_user) where.id_user = id_user;
+  if (kategori_agenda) where.kategori_agenda = kategori_agenda;
 
   return await prisma.agenda.findMany({
     where,

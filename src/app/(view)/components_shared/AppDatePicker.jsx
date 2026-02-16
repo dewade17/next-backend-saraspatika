@@ -259,6 +259,7 @@ export const AppDatePicker = React.forwardRef(function AppDatePicker(
     status, // antd: 'error'|'warning'
     error, // alias status=error + text (kalau dipakai Field)
     size,
+    block = true,
     style,
     className,
 
@@ -332,7 +333,7 @@ export const AppDatePicker = React.forwardRef(function AppDatePicker(
   };
 
   const node = (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: block ? '100%' : undefined }}>
       <DatePicker
         ref={ref}
         value={djValue}
@@ -346,7 +347,7 @@ export const AppDatePicker = React.forwardRef(function AppDatePicker(
         status={computedStatus}
         size={pickedSize}
         className={className}
-        style={{ width: '100%', fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
+        style={{ width: block ? '100%' : undefined, fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
         onChange={handleChange}
         onOpenChange={onOpenChange}
         onCalendarChange={onCalendarChange}
@@ -398,6 +399,7 @@ export const AppRangePicker = React.forwardRef(function AppRangePicker(
     error,
 
     size,
+    block = true,
     style,
     className,
 
@@ -472,7 +474,7 @@ export const AppRangePicker = React.forwardRef(function AppRangePicker(
   };
 
   const node = (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: block ? '100%' : undefined }}>
       <DatePicker.RangePicker
         ref={ref}
         value={djValue ?? undefined}
@@ -486,7 +488,7 @@ export const AppRangePicker = React.forwardRef(function AppRangePicker(
         status={computedStatus}
         size={pickedSize}
         className={className}
-        style={{ width: '100%', fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
+        style={{ width: block ? '100%' : undefined, fontFamily: DEFAULT_FONT_FAMILY, ...(style ?? null) }}
         onChange={handleChange}
         onOpenChange={onOpenChange}
         onCalendarChange={onCalendarChange}

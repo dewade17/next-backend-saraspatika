@@ -1,15 +1,15 @@
 import React from 'react';
-import { Form, InputNumber } from 'antd';
 import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
+import AppInputNumber from '@/app/(view)/components_shared/AppInputNumber.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import { toNumber, buildLocationPayload } from '../_utils/locationHelpers';
 
 export default function LocationFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSubmitting }) {
-  const [form] = Form.useForm();
+  const form = AppForm.useForm();
   const isCreate = mode === 'create';
 
   React.useEffect(() => {
@@ -74,7 +74,7 @@ export default function LocationFormModal({ open, onOpenChange, mode, initialVal
               },
             ]}
           >
-            <InputNumber
+            <AppInputNumber
               style={{ width: '100%' }}
               step={0.000001}
               placeholder='-6.193125'
@@ -96,7 +96,7 @@ export default function LocationFormModal({ open, onOpenChange, mode, initialVal
               },
             ]}
           >
-            <InputNumber
+            <AppInputNumber
               style={{ width: '100%' }}
               step={0.000001}
               placeholder='106.821810'
@@ -120,7 +120,7 @@ export default function LocationFormModal({ open, onOpenChange, mode, initialVal
           ]}
           extra='Sesuaikan satuan radius sesuai kebutuhan'
         >
-          <InputNumber
+          <AppInputNumber
             style={{ width: '100%' }}
             step={0.01}
             min={0.01}

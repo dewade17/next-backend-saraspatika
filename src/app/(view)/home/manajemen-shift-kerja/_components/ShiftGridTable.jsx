@@ -2,13 +2,14 @@
 
 import React from 'react';
 import dayjs from 'dayjs';
-import { Checkbox, Empty, Skeleton, Typography } from 'antd';
+import AppCheckbox from '@/app/(view)/components_shared/AppCheckbox.jsx';
+import AppEmpty from '@/app/(view)/components_shared/AppEmpty.jsx';
+import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
+import { Text } from '@/app/(view)/components_shared/AppTypography.jsx';
 
 import ScheduleCellCard from './ScheduleCellCard.jsx';
 import UserRowHeader from './UserRowHeader.jsx';
 import { formatHeaderID, toDateKey } from '../_utils/date.js';
-
-const { Text } = Typography;
 
 function getUserId(u) {
   return String(u?.id_user ?? '');
@@ -48,7 +49,7 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
     if (loadingUsers || loadingPatterns || loadingAssignments) {
       return (
         <div className='p-4'>
-          <Skeleton
+          <AppSkeleton
             active
             paragraph={{ rows: 8 }}
           />
@@ -59,7 +60,7 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
     if (!users?.length) {
       return (
         <div className='p-8'>
-          <Empty description='Tidak ada karyawan' />
+          <AppEmpty description='Tidak ada karyawan' />
         </div>
       );
     }
@@ -89,13 +90,13 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
                 />
 
                 <div className='mt-3'>
-                  <Checkbox
+                  <AppCheckbox
                     checked={repeatOn}
                     disabled={savingRepeat}
                     onChange={(e) => onToggleRepeat(userId, e.target.checked)}
                   >
                     <span className='text-xs text-slate-600'>Ulangi minggu ini sampai akhir bulan</span>
-                  </Checkbox>
+                  </AppCheckbox>
 
                   {savingRepeat ? (
                     <div className='mt-1'>

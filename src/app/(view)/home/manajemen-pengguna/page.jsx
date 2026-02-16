@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Grid } from 'antd';
 import { UserAddOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 
@@ -21,7 +20,7 @@ import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
 
 export default function ManajemenPenggunaPage() {
   const router = useRouter();
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   const { users, loading, q, setQ, fetchUsers, client, message } = useFetchUsers();

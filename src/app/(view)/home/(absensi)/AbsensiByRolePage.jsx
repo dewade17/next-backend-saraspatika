@@ -2,14 +2,16 @@
 
 import React from 'react';
 import dayjs from 'dayjs';
-import { Grid, Segmented, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, DownloadOutlined, EnvironmentOutlined, TeamOutlined, WarningOutlined } from '@ant-design/icons';
 
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
+import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppAvatar from '@/app/(view)/components_shared/AppAvatar.jsx';
+import AppSegmented from '@/app/(view)/components_shared/AppSegmented.jsx';
+import AppTag from '@/app/(view)/components_shared/AppTag.jsx';
 import { AppFloatButtonGroup } from '@/app/(view)/components_shared/AppFloatButton.jsx';
 import AppTypography, { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import { AppDatePickerField } from '@/app/(view)/components_shared/AppDatePicker.jsx';
@@ -17,8 +19,6 @@ import { AppDatePickerField } from '@/app/(view)/components_shared/AppDatePicker
 import { useFetchAbsensi } from './_hooks/useFetchAbsensi.js';
 import LocationMapModal from './_components/LocationMapModal.jsx';
 import { formatHeaderID, formatTimeDot, pickCoords, toDateKey } from './_utils/absensiHelpers.js';
-
-const { Text } = Typography;
 
 const ID_MONTH = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -82,7 +82,7 @@ function StatusTag({ status }) {
   const isLate = s === 'TERLAMBAT';
 
   return (
-    <Tag
+    <AppTag
       color={isLate ? 'orange' : 'green'}
       style={{
         margin: 0,
@@ -98,7 +98,7 @@ function StatusTag({ status }) {
         {isLate ? <WarningOutlined /> : <CheckCircleOutlined />}
         {label}
       </span>
-    </Tag>
+    </AppTag>
   );
 }
 
@@ -119,7 +119,12 @@ function StatCard({ label, value, icon, tone }) {
         style={{ width: '100%' }}
       >
         <div>
-          <Text type='secondary'>{label}</Text>
+          <AppTypography
+            as='text'
+            tone='secondary'
+          >
+            {label}
+          </AppTypography>
           <div style={{ marginTop: 2 }}>
             <AppTypography
               as='text'
@@ -137,7 +142,7 @@ function StatCard({ label, value, icon, tone }) {
 }
 
 export default function AbsensiByRolePage({ title, role }) {
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   const { rows, loading, range, setRange, message, client } = useFetchAbsensi({ role });
@@ -331,12 +336,13 @@ export default function AbsensiByRolePage({ title, role }) {
         dataIndex: ['user', 'nip'],
         width: 160,
         render: (v) => (
-          <Text
-            type='secondary'
+          <AppTypography
+            as='text'
+            tone='secondary'
             style={{ whiteSpace: 'nowrap' }}
           >
             {v || '-'}
-          </Text>
+          </AppTypography>
         ),
       },
     ];
@@ -348,12 +354,13 @@ export default function AbsensiByRolePage({ title, role }) {
         dataIndex: 'tanggal',
         width: 130,
         render: (v) => (
-          <Text
-            type='secondary'
+          <AppTypography
+            as='text'
+            tone='secondary'
             style={{ whiteSpace: 'nowrap' }}
           >
             {v || '-'}
-          </Text>
+          </AppTypography>
         ),
       });
     }
@@ -379,7 +386,7 @@ export default function AbsensiByRolePage({ title, role }) {
                 align='center'
                 gap={8}
               >
-                <Text>{t}</Text>
+                <AppTypography as='text'>{t}</AppTypography>
                 {has ? (
                   <AppButton
                     type='text'
@@ -423,7 +430,7 @@ export default function AbsensiByRolePage({ title, role }) {
                 align='center'
                 gap={8}
               >
-                <Text>{t}</Text>
+                <AppTypography as='text'>{t}</AppTypography>
                 {has ? (
                   <AppButton
                     type='text'
@@ -477,7 +484,12 @@ export default function AbsensiByRolePage({ title, role }) {
       <div style={{ width: '100%' }}>
         <H2 style={{ margin: 0 }}>Absensi</H2>
         <div style={{ marginTop: 2 }}>
-          <Text type='secondary'>Pantau kehadiran dan kepulangan {roleLabel.toLowerCase()} secara real-time</Text>
+          <AppTypography
+            as='text'
+            tone='secondary'
+          >
+            Pantau kehadiran dan kepulangan {roleLabel.toLowerCase()} secara real-time
+          </AppTypography>
         </div>
       </div>
 
@@ -494,7 +506,7 @@ export default function AbsensiByRolePage({ title, role }) {
               gap={10}
               style={{ width: isMdUp ? 'auto' : '100%' }}
             >
-              <Segmented
+              <AppSegmented
                 size='middle'
                 value={viewMode}
                 onChange={handleModeChange}
@@ -551,7 +563,12 @@ export default function AbsensiByRolePage({ title, role }) {
             </div>
 
             {rows.length === 0 && !loading ? (
-              <Text type='secondary'>Belum ada data absensi.</Text>
+              <AppTypography
+                as='text'
+                tone='secondary'
+              >
+                Belum ada data absensi.
+              </AppTypography>
             ) : (
               <AppTable
                 rowKey='id_absensi'

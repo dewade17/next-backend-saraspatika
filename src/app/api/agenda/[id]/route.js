@@ -5,7 +5,7 @@ import { badRequest, unauthorized, forbidden } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
 import { agendaUpdateSchema } from '@/validations/agenda/agenda_validation.js';
-import { deleteAgendaService, updateAgendaService } from '@/services/agenda/agenda_service.js';
+import { deleteAgendaService, listAgendaService, updateAgendaService } from '@/services/agenda/agenda_service.js';
 
 export const runtime = 'nodejs';
 
@@ -78,6 +78,21 @@ async function parseAgendaPatchRequest(req) {
   const input = await agendaUpdateSchema.parseAsync(json);
   return { input, file: null };
 }
+
+export const GET = apiRoute(async (req, ctx) => {
+  await requirePerm(req, 'agenda', 'read');
+  const params = await ctx.params;
+  const target_id_user = String(params?.id || '').trim();
+  if (!target_id_user) throw badRequest('ID user tidak valid', { code: 'id_user_invalid' });
+
+  const kategori_agenda = req.nextUrl.searchParams.get('kategori')?.trim() || undefined;
+  const data = await listAgendaService({
+    id_user: target_id_user,
+    ...(kategori_agenda ? { kategori_agenda } : {}),
+  });
+
+  return NextResponse.json({ data, message: 'Berhasil mengambil daftar agenda' }, { headers: { 'Cache-Control': 'no-store' } });
+});
 
 export const PATCH = apiRoute(async (req, ctx) => {
   const { id_user } = await requirePerm(req, 'agenda', 'update');

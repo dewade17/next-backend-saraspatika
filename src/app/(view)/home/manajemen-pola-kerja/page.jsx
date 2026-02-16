@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { App as AntdApp, Grid } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
@@ -10,13 +9,14 @@ import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppSpace from '@/app/(view)/components_shared/AppSpace.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
+import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import PolaKerjaFormModal from './_components/PolaKerjaFormModal';
 import { useFetchPolaKerja } from './_hooks/useFetchPolaKerja';
 import { useDeletePolaKerja } from './_hooks/useDeletePolaKerja';
 import { useSubmitPolaKerja } from './_hooks/useSubmitPolaKerja';
 
 export default function ManajemenPolaKerjaPage() {
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   const { rows, loading, fetchPolaKerja, client, message } = useFetchPolaKerja();

@@ -1,14 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Grid, Input, Tag } from 'antd';
-import { ScheduleOutlined } from '@ant-design/icons';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppTable from '@/app/(view)/components_shared/AppTable.jsx';
+import AppTag from '@/app/(view)/components_shared/AppTag.jsx';
 import AppTypography, { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import { AppDatePickerField } from '@/app/(view)/components_shared/AppDatePicker.jsx';
 import { useAppMessage } from '@/app/(view)/components_shared/AppMessage.jsx';
@@ -20,7 +19,7 @@ import { JENIS_LABEL, STATUS_LABEL, STATUS_TAG_COLOR } from './_utils/constants.
 import SummaryCard from './_components/SummaryCard.jsx';
 
 export default function ManajemenVerifikasiCutiPage() {
-  const screens = Grid.useBreakpoint();
+  const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
   const message = useAppMessage();
@@ -52,7 +51,7 @@ export default function ManajemenVerifikasiCutiPage() {
             >
               Masukkan catatan untuk penolakan.
             </AppTypography>
-            <Input.TextArea
+            <AppInput.TextArea
               placeholder='catatan...'
               autoSize={{ minRows: 3, maxRows: 6 }}
               onChange={(e) => {
@@ -88,7 +87,7 @@ export default function ManajemenVerifikasiCutiPage() {
       key: 'status',
       render: (_, row) => {
         const s = String(row?.status ?? '').toUpperCase();
-        return <Tag color={STATUS_TAG_COLOR[s]}>{STATUS_LABEL[s] || s}</Tag>;
+        return <AppTag color={STATUS_TAG_COLOR[s]}>{STATUS_LABEL[s] || s}</AppTag>;
       },
     },
     {

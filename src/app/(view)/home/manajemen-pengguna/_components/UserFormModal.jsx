@@ -1,5 +1,4 @@
 import React from 'react';
-import { Form, Select } from 'antd';
 import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
@@ -7,10 +6,11 @@ import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppUpload from '@/app/(view)/components_shared/AppUpload.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
+import AppSelect from '@/app/(view)/components_shared/AppSelect.jsx';
 import { ROLE_OPTIONS, STATUS_OPTIONS, normalizeStatus, buildInitialFotoFileList } from '../_utils/userHelpers';
 
 export default function UserFormModal({ open, onOpenChange, mode, initialValues, onSubmit, isSubmitting }) {
-  const [form] = Form.useForm();
+  const form = AppForm.useForm();
 
   React.useEffect(() => {
     if (!open) return;
@@ -88,7 +88,7 @@ export default function UserFormModal({ open, onOpenChange, mode, initialValues,
             label='Status'
             name='status'
           >
-            <Select
+            <AppSelect
               options={STATUS_OPTIONS}
               placeholder='Pilih status'
             />
@@ -98,7 +98,7 @@ export default function UserFormModal({ open, onOpenChange, mode, initialValues,
             name='role'
             rules={[{ required: true, message: 'Role wajib dipilih' }]}
           >
-            <Select
+            <AppSelect
               options={ROLE_OPTIONS.map((r) => ({ label: r, value: r }))}
               placeholder='Pilih role'
             />

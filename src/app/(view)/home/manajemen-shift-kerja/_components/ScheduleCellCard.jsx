@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import dayjs from 'dayjs';
-import { Checkbox, Select, Typography, Tooltip } from 'antd';
-
-const { Text } = Typography;
+import AppSelect from '@/app/(view)/components_shared/AppSelect.jsx';
+import AppTooltip from '@/app/(view)/components_shared/AppTooltip.jsx';
+import { Text } from '@/app/(view)/components_shared/AppTypography.jsx';
 
 function formatTimeRange(p) {
   const start = p?.jam_mulai_kerja ? String(p.jam_mulai_kerja).slice(0, 5) : '';
@@ -67,7 +66,7 @@ export default function ScheduleCellCard({ date, isPast, patterns, valuePatternI
       <div className='px-3 pt-3'>
         <div className='text-xs text-slate-500'>Jadwal (riwayat)</div>
 
-        <Select
+        <AppSelect
           size='middle'
           className='w-full mt-2'
           placeholder='Standar (09:00 – 18:00)'
@@ -83,9 +82,9 @@ export default function ScheduleCellCard({ date, isPast, patterns, valuePatternI
             className='inline-block h-2 w-2 rounded-full'
             style={{ backgroundColor: dot }}
           />
-          <Tooltip title={selected?.nama_pola_kerja || ''}>
+          <AppTooltip title={selected?.nama_pola_kerja || ''}>
             <Text className='text-xs text-slate-600 truncate'>{selected ? `${selected.nama_pola_kerja} • ${formatTimeRange(selected) || '—'}` : '—'}</Text>
-          </Tooltip>
+          </AppTooltip>
         </div>
       </div>
     </div>

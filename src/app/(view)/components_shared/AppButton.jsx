@@ -187,6 +187,7 @@ export const AppButton = React.forwardRef(function AppButton(
     ...(toneStyle ?? null),
     ...(style ?? null),
   };
+  const wrapperStyle = fullWidth ? { display: 'block', width: '100%' } : { display: 'inline-block' };
 
   const renderContent = () => {
     if (isLoading && loadingText) return loadingText;
@@ -299,7 +300,7 @@ export const AppButton = React.forwardRef(function AppButton(
         cancelButtonProps={confirmCfg.cancelButtonProps}
         onConfirm={() => runAction()}
       >
-        <span style={{ display: 'inline-block' }}>{buttonNode}</span>
+        <span style={wrapperStyle}>{buttonNode}</span>
       </Popconfirm>
     ) : (
       buttonNode
@@ -310,7 +311,7 @@ export const AppButton = React.forwardRef(function AppButton(
   // Tooltip butuh wrapper span supaya tetap muncul saat disabled
   return (
     <Tooltip {...tooltipCfg}>
-      <span style={{ display: 'inline-block' }}>{withConfirm}</span>
+      <span style={wrapperStyle}>{withConfirm}</span>
     </Tooltip>
   );
 });
