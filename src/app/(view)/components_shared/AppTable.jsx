@@ -322,7 +322,7 @@ function ColumnSettingsDrawer({ open, onClose, columns, hiddenSet, setHiddenSet,
       styles={{ body: { fontFamily: DEFAULT_FONT_FAMILY } }}
     >
       <Space
-        direction='vertical'
+        orientation='vertical'
         size={12}
         style={{ width: '100%' }}
       >

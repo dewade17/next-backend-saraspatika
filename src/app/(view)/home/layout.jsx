@@ -219,6 +219,9 @@ function AdminDashboardShell({ children }) {
   };
 
   const primaryColor = '#1677ff';
+  const sidebarBg = '#d9f2d0'; // Hijau pastel sesuai gambar
+  const headerBg = '#bae7ff'; // Biru muda sesuai gambar
+  const selectedMenuBg = '#91d5ff'; // Biru highlight menu aktif
   const userLabel = user?.nama_pengguna || user?.email || 'User';
 
   // ⛔️ Proteksi folder /home: block render sampai user ter-load (dan id_user sudah tersimpan di localStorage)
@@ -243,9 +246,27 @@ function AdminDashboardShell({ children }) {
     <ConfigProvider
       theme={{
         components: {
-          Layout: { siderBg: 'white', triggerBg: primaryColor, triggerColor: 'white', footerBg: 'white' },
+          Layout: {
+            siderBg: sidebarBg,
+            triggerBg: '#c1e0b5', // Warna tombol collapse (hijau sedikit lebih tua agar kontras)
+            triggerColor: '#434343',
+            headerBg: headerBg,
+            footerBg: '#ffffff',
+          },
+          Menu: {
+            itemBg: sidebarBg,
+            subMenuItemBg: sidebarBg,
+            itemColor: '#434343', // Teks gelap agar mudah dibaca
+            itemHoverBg: '#c1e0b5', // Warna saat kursor menempel
+            itemSelectedBg: selectedMenuBg, // Warna biru saat menu dipilih (seperti tombol Pegawai)
+            itemSelectedColor: '#003a8c', // Teks biru tua saat terpilih
+            popupBg: sidebarBg,
+          },
         },
-        token: { colorPrimary: primaryColor },
+        token: {
+          colorPrimary: primaryColor,
+          borderRadius: 8,
+        },
       }}
     >
       <Layout style={{ minHeight: '100vh' }}>
@@ -259,6 +280,7 @@ function AdminDashboardShell({ children }) {
               height: '100vh',
               left: 0,
               zIndex: 1000,
+              backgroundColor: sidebarBg,
               boxShadow: '2px 0 8px rgba(0,0,0,0.05)',
               overflowY: 'auto', // Mengaktifkan scroll vertikal
               paddingBottom: '48px',
@@ -279,6 +301,7 @@ function AdminDashboardShell({ children }) {
               selectedKeys={selectedKeys}
               items={menuItems}
               inlineCollapsed={collapsed}
+              style={{ backgroundColor: sidebarBg }}
             />
           </Sider>
         )}
@@ -290,7 +313,7 @@ function AdminDashboardShell({ children }) {
             onOpenChange={setDrawerVisible}
             width={280}
             footer={false}
-            bodyStyle={{ padding: 0 }}
+            bodyStyle={{ padding: 0, backgroundColor: sidebarBg }}
           >
             <div style={{ padding: '24px', textAlign: 'center' }}>
               <AppImage
@@ -306,6 +329,7 @@ function AdminDashboardShell({ children }) {
               selectedKeys={selectedKeys}
               items={menuItems}
               onAction={() => setDrawerVisible(false)}
+              style={{ backgroundColor: sidebarBg }}
             />
           </AppDrawer>
         )}
@@ -320,7 +344,7 @@ function AdminDashboardShell({ children }) {
               position: 'sticky',
               top: 0,
               zIndex: 999,
-              backgroundColor: '#fff',
+              backgroundColor: headerBg,
               boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
             }}
           >

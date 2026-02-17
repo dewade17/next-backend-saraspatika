@@ -3,15 +3,13 @@
 import React from 'react';
 
 import AppModal from '@/app/(view)/components_shared/AppModal.jsx';
-import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 
-import { buildOsmEmbedUrl, buildOsmLink } from '../_utils/absensiHelpers.js';
+import { buildOsmEmbedUrl } from '../_utils/absensiHelpers.js';
 
 export default function LocationMapModal({ open, onOpenChange, title, lokasiName, latitude, longitude }) {
   const embedUrl = React.useMemo(() => buildOsmEmbedUrl(latitude, longitude), [latitude, longitude]);
-  const linkUrl = React.useMemo(() => buildOsmLink(latitude, longitude), [latitude, longitude]);
 
   return (
     <AppModal
@@ -33,24 +31,7 @@ export default function LocationMapModal({ open, onOpenChange, title, lokasiName
           >
             {lokasiName || 'Koordinat'}
           </AppTypography>
-          <div style={{ marginTop: 4 }}>
-            <AppTypography
-              as='text'
-              tone='secondary'
-            >
-              Latitude: {latitude ?? '-'} | Longitude: {longitude ?? '-'}
-            </AppTypography>
-          </div>
         </div>
-
-        {linkUrl ? (
-          <AppButton
-            type='link'
-            onClick={() => window.open(linkUrl, '_blank', 'noopener,noreferrer')}
-          >
-            Buka di OpenStreetMap
-          </AppButton>
-        ) : null}
 
         {embedUrl ? (
           <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)' }}>

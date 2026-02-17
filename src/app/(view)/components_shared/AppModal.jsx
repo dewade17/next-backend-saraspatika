@@ -127,7 +127,7 @@ function defaultHeader(title, subtitle, description) {
 
   return (
     <Space
-      direction='vertical'
+      orientation='vertical'
       size={2}
       style={{ lineHeight: 1.15, minWidth: 0 }}
     >
