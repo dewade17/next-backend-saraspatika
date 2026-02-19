@@ -17,8 +17,11 @@ export function formatHeaderID(dateKey) {
 
 export function formatTimeDot(value) {
   if (!value) return '-';
-  const d = dayjs(value);
-  return d.isValid() ? d.format('HH.mm') : '-';
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return '-';
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${hh}.${mm}`;
 }
 
 export function groupByTanggal(rows) {

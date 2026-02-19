@@ -102,8 +102,8 @@ export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilte
       },
       {
         title: 'Jam Mulai',
-        dataIndex: 'waktu_masuk',
-        key: 'waktu_masuk',
+        dataIndex: 'jam_mulai',
+        key: 'jam_mulai',
         width: 120,
         render: (v) => (
           <AppTypography
@@ -117,8 +117,8 @@ export default function AgendaTablePage({ pageTitle, pageSubtitle, kategoriFilte
       },
       {
         title: 'Jam Selesai',
-        dataIndex: 'waktu_pulang',
-        key: 'waktu_pulang',
+        dataIndex: 'jam_selesai',
+        key: 'jam_selesai',
         width: 120,
         render: (v) => (
           <AppTypography
