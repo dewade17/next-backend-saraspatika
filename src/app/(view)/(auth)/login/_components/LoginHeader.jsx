@@ -19,16 +19,7 @@ export default function LoginHeader() {
         align='center'
         style={{ marginBottom: 4, fontWeight: 700 }}
       >
-        Si Hadir Saraswati 4 Denpasar
-      </AppTypography>
-
-      <AppTypography
-        as='text'
-        tone='secondary'
-        align='center'
-        style={{ display: 'block' }}
-      >
-        Selamat datang, mohon masukkan data Anda!
+        Selamat Datang Sistem Absensi Saraspatika
       </AppTypography>
     </div>
   );

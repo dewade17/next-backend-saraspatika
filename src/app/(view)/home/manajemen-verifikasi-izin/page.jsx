@@ -63,8 +63,8 @@ export default function ManajemenVerifikasiCutiPage() {
         onOk: async () => {
           const trimmed = String(note ?? '').trim();
           if (!trimmed) {
-            message.error('note_admin wajib diisi');
-            return Promise.reject(new Error('note_admin wajib diisi'));
+            message.error('note wajib diisi');
+            return Promise.reject(new Error('note wajib diisi'));
           }
           await updateStatus(item, 'DITOLAK', trimmed);
         },
@@ -91,8 +91,8 @@ export default function ManajemenVerifikasiCutiPage() {
       },
     },
     {
-      title: 'note_admin',
-      key: 'note_admin',
+      title: 'note',
+      key: 'note',
       render: (_, row) => row?.admin_note || '-',
     },
   ];
