@@ -14,11 +14,12 @@ export default function LocationFormModal({ open, onOpenChange, mode, initialVal
 
   React.useEffect(() => {
     if (!open) return;
+    const parsedRadius = toNumber(initialValues?.radius);
     form.setFieldsValue({
       name: initialValues?.name ?? '',
       latitude: initialValues?.latitude ?? null,
       longitude: initialValues?.longitude ?? null,
-      radius: initialValues?.radius ?? 0.1,
+      radius: parsedRadius === null ? 1 : Math.max(1, Math.trunc(parsedRadius)),
     });
   }, [open, form, initialValues]);
 
@@ -113,7 +114,8 @@ export default function LocationFormModal({ open, onOpenChange, mode, initialVal
               validator: (_, v) => {
                 const n = toNumber(v);
                 if (n === null) return Promise.reject(new Error('Radius harus berupa angka.'));
-                if (n < 0.01) return Promise.reject(new Error('Radius minimal 0.01.'));
+                if (!Number.isInteger(n)) return Promise.reject(new Error('Radius harus bilangan bulat.'));
+                if (n < 1) return Promise.reject(new Error('Radius minimal 1.'));
                 return Promise.resolve();
               },
             },
@@ -122,8 +124,9 @@ export default function LocationFormModal({ open, onOpenChange, mode, initialVal
         >
           <AppInputNumber
             style={{ width: '100%' }}
-            step={0.01}
-            min={0.01}
+            step={1}
+            precision={0}
+            min={1}
           />
         </AppForm.Item>
 

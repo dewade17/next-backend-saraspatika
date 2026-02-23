@@ -5,7 +5,7 @@ import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import { safeText } from '../_utils/userHelpers';
 
-export default function UserCard({ user, onEdit, onDelete, onPermission, isDeleting }) {
+function UserCard({ user, onEdit, onDelete, onPermission, isDeleting }) {
   return (
     <AppCard
       bordered
@@ -81,3 +81,8 @@ export default function UserCard({ user, onEdit, onDelete, onPermission, isDelet
     </AppCard>
   );
 }
+
+const MemoizedUserCard = React.memo(UserCard);
+MemoizedUserCard.displayName = 'UserCard';
+
+export default MemoizedUserCard;

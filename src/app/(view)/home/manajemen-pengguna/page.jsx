@@ -9,7 +9,7 @@ import UserFormModal from './_components/UserFormModal';
 import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useSubmitUser } from './_hooks/useSubmitUser';
 import { useDeleteUser } from './_hooks/useDeleteUser';
-import { matchesQuery } from './_utils/userHelpers';
+import { buildUserSearchIndex, normalizeQuery } from './_utils/userHelpers';
 import { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
@@ -17,6 +17,8 @@ import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppFloatButton from '@/app/(view)/components_shared/AppFloatButton.jsx';
 import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
+
+const PROFILE_MIN_DURATION_MS = 8;
 
 export default function ManajemenPenggunaPage() {
   const router = useRouter();
@@ -37,7 +39,20 @@ export default function ManajemenPenggunaPage() {
     onSuccess: fetchUsers,
   });
 
-  const filtered = React.useMemo(() => users.filter((u) => matchesQuery(u, q)), [users, q]);
+  const deferredQ = React.useDeferredValue(q);
+
+  const indexedUsers = React.useMemo(() => {
+    return users.map((user) => ({
+      user,
+      searchIndex: buildUserSearchIndex(user),
+    }));
+  }, [users]);
+
+  const filtered = React.useMemo(() => {
+    const normalized = normalizeQuery(deferredQ);
+    if (!normalized) return indexedUsers.map((item) => item.user);
+    return indexedUsers.filter((item) => item.searchIndex.includes(normalized)).map((item) => item.user);
+  }, [deferredQ, indexedUsers]);
 
   const openPermission = React.useCallback(
     (user) => {
@@ -46,6 +61,18 @@ export default function ManajemenPenggunaPage() {
       router.push(`/home/permission-page?userId=${encodeURIComponent(String(id))}`);
     },
     [router],
+  );
+
+  const onProfileRender = React.useCallback(
+    (id, phase, actualDuration, baseDuration) => {
+      if (process.env.NODE_ENV === 'production') return;
+      if (actualDuration < PROFILE_MIN_DURATION_MS) return;
+
+      console.info(
+        `[Profiler][ManajemenPengguna] id=${id} phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms users=${filtered.length} q="${deferredQ}"`,
+      );
+    },
+    [deferredQ, filtered.length],
   );
 
   return (
@@ -71,13 +98,18 @@ export default function ManajemenPenggunaPage() {
         </div>
 
         <div style={{ width: isMdUp ? 260 : 220 }}>
-          <AppInput.Search
-            placeholder='Search'
-            value={q}
-            onValueChange={setQ}
-            emitOnChange
-            debounceMs={200}
-          />
+          <React.Profiler
+            id='UserSearchInput'
+            onRender={onProfileRender}
+          >
+            <AppInput.Search
+              placeholder='Search'
+              value={q}
+              onValueChange={setQ}
+              emitOnChange
+              debounceMs={200}
+            />
+          </React.Profiler>
         </div>
       </AppFlex>
 
@@ -97,21 +129,26 @@ export default function ManajemenPenggunaPage() {
             ))}
           </AppGrid>
         ) : (
-          <AppGrid
-            columns={{ base: 1, md: 2, lg: 3 }}
-            gap={16}
+          <React.Profiler
+            id='UserCardGrid'
+            onRender={onProfileRender}
           >
-            {filtered.map((u) => (
-              <UserCard
-                key={u.id_user}
-                user={u}
-                isDeleting={deletingId === u.id_user}
-                onEdit={openEdit}
-                onDelete={handleDelete}
-                onPermission={openPermission}
-              />
-            ))}
-          </AppGrid>
+            <AppGrid
+              columns={{ base: 1, md: 2, lg: 3 }}
+              gap={16}
+            >
+              {filtered.map((u) => (
+                <UserCard
+                  key={u.id_user}
+                  user={u}
+                  isDeleting={deletingId === u.id_user}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                  onPermission={openPermission}
+                />
+              ))}
+            </AppGrid>
+          </React.Profiler>
         )}
       </div>
 

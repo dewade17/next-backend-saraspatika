@@ -11,13 +11,16 @@ export function normalizeQuery(q) {
     .toLowerCase();
 }
 
+export function buildUserSearchIndex(user) {
+  return [user?.name, user?.email, user?.nip, user?.nomor_handphone, user?.role, user?.status]
+    .map((x) => (x == null ? '' : String(x).toLowerCase()))
+    .join(' ');
+}
+
 export function matchesQuery(user, q) {
   const s = normalizeQuery(q);
   if (!s) return true;
-
-  const hay = [user?.name, user?.email, user?.nip, user?.nomor_handphone, user?.role, user?.status].map((x) => (x == null ? '' : String(x).toLowerCase())).join(' ');
-
-  return hay.includes(s);
+  return buildUserSearchIndex(user).includes(s);
 }
 
 export function normalizeStatus(value) {
