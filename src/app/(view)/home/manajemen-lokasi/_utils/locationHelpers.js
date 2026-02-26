@@ -4,6 +4,8 @@ export function makeId() {
 }
 
 export function toNumber(val) {
+  if (val == null) return null;
+  if (typeof val === 'string' && val.trim() === '') return null;
   const n = typeof val === 'number' ? val : Number(val);
   return Number.isFinite(n) ? n : null;
 }

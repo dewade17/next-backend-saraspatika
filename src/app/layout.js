@@ -1,6 +1,7 @@
 import { Poppins } from 'next/font/google';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import './globals.css';
+import 'leaflet/dist/leaflet.css';
 import Providers from './providers';
 
 const poppins = Poppins({
