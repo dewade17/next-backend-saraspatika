@@ -69,7 +69,7 @@ export default function ScheduleCellCard({ date, isPast, patterns, valuePatternI
         <AppSelect
           size='middle'
           className='w-full mt-2'
-          placeholder='Standar (09:00 – 18:00)'
+          placeholder='Tidak Ada Riwayat'
           value={valuePatternId ? String(valuePatternId) : undefined}
           onChange={(v) => onChange(v)}
           allowClear
