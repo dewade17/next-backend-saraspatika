@@ -18,7 +18,7 @@ import { AppDatePickerField } from '@/app/(view)/components_shared/AppDatePicker
 
 import { useFetchAbsensi } from './_hooks/useFetchAbsensi.js';
 import LocationMapModal from './_components/LocationMapModal.jsx';
-import { formatHeaderID, formatTimeDot, pickCoords, toDateKey } from './_utils/absensiHelpers.js';
+import { formatHeaderID, formatTimeDot, pickCoords, summarizeAbsensi, toDateKey } from './_utils/absensiHelpers.js';
 
 const ID_MONTH = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -148,11 +148,6 @@ export default function AbsensiByRolePage({ title, role }) {
   const { rows, loading, range, setRange, message, client } = useFetchAbsensi({ role });
 
   const [viewMode, setViewMode] = React.useState('HARIAN'); // HARIAN | BULANAN
-  const [selectedRowKeys, setSelectedRowKeys] = React.useState([]);
-
-  React.useEffect(() => {
-    setSelectedRowKeys([]);
-  }, [role, rows?.length, viewMode]);
 
   const [locOpen, setLocOpen] = React.useState(false);
   const [locState, setLocState] = React.useState({
@@ -191,25 +186,7 @@ export default function AbsensiByRolePage({ title, role }) {
     return selectedDayKey ? formatHeaderID(selectedDayKey) : '';
   }, [anchorDate, isMonthly, selectedDayKey]);
 
-  const totalPresensi = React.useMemo(() => {
-    const set = new Set();
-    for (const r of Array.isArray(rows) ? rows : []) {
-      if (r?.id_user) set.add(String(r.id_user));
-    }
-    return set.size;
-  }, [rows]);
-
-  const tepatWaktu = React.useMemo(() => {
-    let n = 0;
-    for (const r of Array.isArray(rows) ? rows : []) if (r?.status_masuk === 'TEPAT') n += 1;
-    return n;
-  }, [rows]);
-
-  const terlambat = React.useMemo(() => {
-    let n = 0;
-    for (const r of Array.isArray(rows) ? rows : []) if (r?.status_masuk === 'TERLAMBAT') n += 1;
-    return n;
-  }, [rows]);
+  const { totalPresensi, tepatWaktu, terlambat } = React.useMemo(() => summarizeAbsensi(rows), [rows]);
 
   const handleModeChange = React.useCallback(
     (val) => {
@@ -244,17 +221,8 @@ export default function AbsensiByRolePage({ title, role }) {
     [isMonthly, setRange],
   );
 
-  const resolveExportTarget = React.useCallback(
-    (sourceRows) => {
-      const allRows = Array.isArray(sourceRows) ? sourceRows : [];
-      if (!Array.isArray(selectedRowKeys) || selectedRowKeys.length === 0) return allRows;
-      return allRows.filter((r) => selectedRowKeys.includes(r?.id_absensi));
-    },
-    [selectedRowKeys],
-  );
-
   const handleExportHarian = React.useCallback(() => {
-    const target = resolveExportTarget(rows);
+    const target = Array.isArray(rows) ? rows : [];
 
     if (!target || target.length === 0) {
       message.info('Tidak ada data untuk diexport.');
@@ -264,7 +232,7 @@ export default function AbsensiByRolePage({ title, role }) {
     const fileName = `absensi-${String(roleLabel).toLowerCase()}-${selectedDayKey}.csv`;
     buildAbsensiCsv({ rows: target, fileName });
     message.success('Export harian berhasil.');
-  }, [message, roleLabel, rows, selectedDayKey, resolveExportTarget]);
+  }, [message, roleLabel, rows, selectedDayKey]);
 
   const handleExportBulanan = React.useCallback(async () => {
     const base = anchorDate?.isValid?.() ? anchorDate : dayjs();
@@ -283,9 +251,7 @@ export default function AbsensiByRolePage({ title, role }) {
       params.set('limit', '3000');
 
       const res = await client.get(`/api/absensi?${params.toString()}`, { cache: 'no-store' });
-      const data = Array.isArray(res?.data) ? res.data : [];
-
-      const target = isMonthly ? resolveExportTarget(data) : data;
+      const target = Array.isArray(res?.data) ? res.data : [];
 
       if (!target || target.length === 0) {
         message.info('Tidak ada data untuk diexport.', { key: msgKey });
@@ -298,7 +264,7 @@ export default function AbsensiByRolePage({ title, role }) {
     } catch (err) {
       message.errorFrom(err, { fallback: 'Gagal export bulanan.', key: msgKey });
     }
-  }, [anchorDate, client, isMonthly, message, role, roleLabel, resolveExportTarget]);
+  }, [anchorDate, client, message, role, roleLabel]);
 
   const nameColTitle = roleLabel === 'Guru' ? 'Nama Guru' : roleLabel === 'Pegawai' ? 'Nama Pegawai' : 'Nama';
 
@@ -583,10 +549,6 @@ export default function AbsensiByRolePage({ title, role }) {
                 refreshable={false}
                 exportCsv={false}
                 columnSettings={false}
-                rowSelection={{
-                  selectedRowKeys,
-                  onChange: (keys) => setSelectedRowKeys(keys),
-                }}
                 scroll={{ x: isMonthly ? 1120 : 940 }}
               />
             )}

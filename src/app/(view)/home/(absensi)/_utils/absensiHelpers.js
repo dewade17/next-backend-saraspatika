@@ -36,6 +36,57 @@ export function groupByTanggal(rows) {
   return map;
 }
 
+export function countTotalKehadiran(rows) {
+  const users = new Set();
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const idUser = r?.id_user;
+    if (idUser == null || idUser === '') continue;
+    users.add(String(idUser));
+  }
+  return users.size;
+}
+
+export function countStatusMasuk(rows) {
+  let tepatWaktu = 0;
+  let terlambat = 0;
+
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (r?.status_masuk === 'TEPAT') tepatWaktu += 1;
+    if (r?.status_masuk === 'TERLAMBAT') terlambat += 1;
+  }
+
+  return { tepatWaktu, terlambat };
+}
+
+export function aggregateAbsensiHarian(rows) {
+  const grouped = groupByTanggal(rows);
+  const result = [];
+
+  for (const [tanggal, items] of grouped.entries()) {
+    const { tepatWaktu, terlambat } = countStatusMasuk(items);
+    result.push({
+      tanggal,
+      totalAbsensi: items.length,
+      totalKehadiran: countTotalKehadiran(items),
+      tepatWaktu,
+      terlambat,
+    });
+  }
+
+  return result;
+}
+
+export function summarizeAbsensi(rows) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const { tepatWaktu, terlambat } = countStatusMasuk(safeRows);
+
+  return {
+    totalPresensi: countTotalKehadiran(safeRows),
+    tepatWaktu,
+    terlambat,
+  };
+}
+
 export function buildOsmEmbedUrl(lat, lon, zoom = 17) {
   const lt = Number(lat);
   const ln = Number(lon);
