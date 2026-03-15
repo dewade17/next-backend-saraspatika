@@ -1,14 +1,8 @@
-const allowedOrigins = [
-  'https://saraspatika-web.com',
-  'http://localhost:64704',
-  'http://localhost:9000',
-];
+const allowedOrigins = ['https://saraspatika-web.com', 'http://localhost:64704', 'http://localhost:9000', 'http://localhost:52207'];
 
 function getCorsHeaders(request) {
   const origin = request.headers.get('origin');
-  const allowOrigin = allowedOrigins.includes(origin)
-    ? origin
-    : allowedOrigins[0];
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,
@@ -27,8 +21,5 @@ export async function OPTIONS(request) {
 }
 
 export async function GET(request) {
-  return Response.json(
-    { message: 'OK' },
-    { headers: getCorsHeaders(request) }
-  );
+  return Response.json({ message: 'OK' }, { headers: getCorsHeaders(request) });
 }
