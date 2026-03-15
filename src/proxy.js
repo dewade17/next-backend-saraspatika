@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server';
-import { verifyAccessToken } from '@/lib/jwt.js';
+import { getCorsHeaders } from '@/lib/cors.js';
+
+export function proxy(request) {
+  const corsHeaders = getCorsHeaders(request);
+
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
+
+  const response = NextResponse.next();
+
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    response.headers.set(key, value);
+  }
+
+  return response;
+}
 
 export const config = {
-  matcher: ['/home/:path*'],
+  matcher: '/api/:path*',
 };
-
-export async function proxy(req) {
-  const token = req.cookies.get('access_token')?.value;
-  if (!token) return NextResponse.redirect(new URL('/login', req.url));
-
-  try {
-    await verifyAccessToken(token);
-    return NextResponse.next();
-  } catch {
-    return NextResponse.redirect(new URL('/login?expired=1', req.url));
-  }
-}
