@@ -42,15 +42,46 @@ export const conflict = (detail = 'Conflict', opts = {}) => make(409, 'Conflict'
 export const tooManyRequests = (detail = 'Too Many Requests', opts = {}) => make(429, 'Too Many Requests', detail, { code: 'too_many_requests', ...opts });
 export const internal = (detail = 'Internal Server Error', opts = {}) => new AppError(detail, { status: 500, title: 'Internal Server Error', detail, code: 'internal_error', expose: false, ...opts });
 
+const UNIQUE_FIELD_DETAILS = {
+  nip: 'NIP sudah digunakan',
+  email: 'Email sudah digunakan',
+  nomor_handphone: 'Nomor handphone sudah digunakan',
+};
+
+function normalizePrismaTargets(target) {
+  const rawTargets = Array.isArray(target) ? target : target != null ? [target] : [];
+
+  return rawTargets
+    .map((item) => String(item || '').trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function findUniqueTarget(targets) {
+  const knownFields = Object.keys(UNIQUE_FIELD_DETAILS);
+
+  for (const field of knownFields) {
+    const matched = targets.find((target) => target === field || target.endsWith(`.${field}`) || target.includes(field));
+    if (matched) return field;
+  }
+
+  return null;
+}
+
 function prismaToAppError(err) {
   const name = String(err?.name || '');
   const code = String(err?.code || '');
 
   if (name === 'PrismaClientKnownRequestError') {
     if (code === 'P2002') {
-      return conflict('Data sudah ada', {
+      const targets = normalizePrismaTargets(err?.meta?.target);
+      const field = findUniqueTarget(targets);
+
+      return conflict(field ? UNIQUE_FIELD_DETAILS[field] : 'Data sudah ada', {
         code: 'unique_violation',
-        errors: { target: err?.meta?.target },
+        errors: {
+          target: targets,
+          ...(field ? { field } : {}),
+        },
         cause: err,
       });
     }

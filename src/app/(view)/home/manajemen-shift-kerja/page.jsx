@@ -18,6 +18,47 @@ function endOfMonth(d) {
   return d.endOf('month').startOf('day');
 }
 
+function endOfWeek(weekStart) {
+  return dayjs(weekStart).add(6, 'day').startOf('day');
+}
+
+function applyAssignmentRange({ startDate, endDate, userId, patternId, setAssignments }) {
+  const start = dayjs(startDate).startOf('day');
+  const end = dayjs(endDate).startOf('day');
+
+  setAssignments((prev) => {
+    const next = new Map(prev);
+    let cursor = start.clone();
+
+    while (cursor.isSameOrBefore(end, 'day')) {
+      const key = `${String(userId)}::${toDateKey(cursor)}`;
+      if (patternId) next.set(key, { id_pola_kerja: patternId });
+      else next.delete(key);
+      cursor = cursor.add(1, 'day');
+    }
+
+    return next;
+  });
+}
+
+function buildAssignmentRangeUpdates({ userId, startDate, endDate, patternId }) {
+  const updates = [];
+  const start = dayjs(startDate).startOf('day');
+  const end = dayjs(endDate).startOf('day');
+  let cursor = start.clone();
+
+  while (cursor.isSameOrBefore(end, 'day')) {
+    updates.push({
+      id_user: String(userId),
+      tanggal: toDateKey(cursor),
+      id_pola_kerja: patternId ? String(patternId) : null,
+    });
+    cursor = cursor.add(1, 'day');
+  }
+
+  return updates;
+}
+
 function applyRepeatUntilEndOfMonth({ weekStart, pickedDate, userId, patternId, setAssignments }) {
   const start = dayjs(weekStart).startOf('day');
   const eom = endOfMonth(pickedDate);
@@ -37,6 +78,25 @@ function applyRepeatUntilEndOfMonth({ weekStart, pickedDate, userId, patternId, 
     }
 
     return next;
+  });
+}
+
+function applyRepeatUntilEndOfWeek({ weekStart, pickedDate, userId, patternId, setAssignments }) {
+  applyAssignmentRange({
+    startDate: pickedDate,
+    endDate: endOfWeek(weekStart),
+    userId,
+    patternId,
+    setAssignments,
+  });
+}
+
+function buildRepeatUntilEndOfWeekUpdates({ weekStart, pickedDate, userId, patternId }) {
+  return buildAssignmentRangeUpdates({
+    userId,
+    startDate: pickedDate,
+    endDate: endOfWeek(weekStart),
+    patternId,
   });
 }
 
@@ -159,10 +219,11 @@ export default function ManajemenShiftKerjaPage() {
     }
   }
 
-  async function handleChangeAssignment({ userId, date, patternId }) {
+  async function handleChangeAssignment({ userId, date, patternId, repeatUntilWeekEnd = false }) {
     const uId = String(userId);
     const dateKey = toDateKey(date);
     const mapKey = `${uId}::${dateKey}`;
+    const normalizedPatternId = patternId ? String(patternId) : null;
 
     const isRepeatOn = !!repeatByUser.get(uId);
 
@@ -176,7 +237,7 @@ export default function ManajemenShiftKerjaPage() {
         weekStart,
         pickedDate: dayjs(date).startOf('day'),
         userId: uId,
-        patternId: patternId ? String(patternId) : null,
+        patternId: normalizedPatternId,
         setAssignments,
       });
 
@@ -186,7 +247,7 @@ export default function ManajemenShiftKerjaPage() {
           updates.push({
             id_user: uId,
             tanggal: toDateKey(cursor),
-            id_pola_kerja: patternId ? String(patternId) : null,
+            id_pola_kerja: normalizedPatternId,
           });
         }
         cursor = cursor.add(1, 'day');
@@ -201,9 +262,34 @@ export default function ManajemenShiftKerjaPage() {
       return;
     }
 
+    if (repeatUntilWeekEnd) {
+      applyRepeatUntilEndOfWeek({
+        weekStart,
+        pickedDate: dayjs(date).startOf('day'),
+        userId: uId,
+        patternId: normalizedPatternId,
+        setAssignments,
+      });
+
+      try {
+        await saveAssignments(
+          buildRepeatUntilEndOfWeekUpdates({
+            weekStart,
+            pickedDate: dayjs(date).startOf('day'),
+            userId: uId,
+            patternId: normalizedPatternId,
+          }),
+        );
+        await refetchAssignments();
+      } catch {
+        await refetchAssignments();
+      }
+      return;
+    }
+
     setAssignments((prev) => {
       const next = new Map(prev);
-      if (patternId) next.set(mapKey, { id_pola_kerja: String(patternId) });
+      if (normalizedPatternId) next.set(mapKey, { id_pola_kerja: normalizedPatternId });
       else next.delete(mapKey);
       return next;
     });
@@ -213,7 +299,7 @@ export default function ManajemenShiftKerjaPage() {
         {
           id_user: uId,
           tanggal: dateKey,
-          id_pola_kerja: patternId ? String(patternId) : null,
+          id_pola_kerja: normalizedPatternId,
         },
       ]);
       await refetchAssignments();

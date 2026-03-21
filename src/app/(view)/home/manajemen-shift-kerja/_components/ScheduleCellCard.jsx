@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import AppCheckbox from '@/app/(view)/components_shared/AppCheckbox.jsx';
 import AppSelect from '@/app/(view)/components_shared/AppSelect.jsx';
 import AppTooltip from '@/app/(view)/components_shared/AppTooltip.jsx';
 import { Text } from '@/app/(view)/components_shared/AppTypography.jsx';
@@ -9,7 +10,7 @@ function formatTimeRange(p) {
   const start = p?.jam_mulai_kerja ? String(p.jam_mulai_kerja).slice(0, 5) : '';
   const end = p?.jam_selesai_kerja ? String(p.jam_selesai_kerja).slice(0, 5) : '';
   if (!start && !end) return '';
-  if (start && end) return `${start} – ${end}`;
+  if (start && end) return `${start} - ${end}`;
   return start || end;
 }
 
@@ -38,7 +39,9 @@ function inferDotColorByName(name, fallback) {
   return fallback;
 }
 
-export default function ScheduleCellCard({ date, isPast, patterns, valuePatternId, onChange }) {
+export default function ScheduleCellCard({ isPast, patterns, valuePatternId, onChange, repeatUntilEndOfMonthEnabled = false }) {
+  const [repeatUntilWeekEnd, setRepeatUntilWeekEnd] = React.useState(false);
+
   const options = React.useMemo(() => {
     const base = Array.isArray(patterns) ? patterns : [];
     return base.map((p) => {
@@ -57,13 +60,33 @@ export default function ScheduleCellCard({ date, isPast, patterns, valuePatternI
   const dot = selected ? inferDotColorByName(selected.nama_pola_kerja, color.border) : '#94A3B8';
 
   const disabled = !!isPast;
+  const repeatUntilWeekDisabled = disabled || repeatUntilEndOfMonthEnabled;
+
+  React.useEffect(() => {
+    if (repeatUntilWeekDisabled) {
+      setRepeatUntilWeekEnd(false);
+    }
+  }, [repeatUntilWeekDisabled]);
+
+  function emitChange(nextPatternId, nextRepeatUntilWeekEnd = repeatUntilWeekEnd) {
+    onChange(nextPatternId, { repeatUntilWeekEnd: nextRepeatUntilWeekEnd });
+  }
+
+  function handleToggleRepeat(event) {
+    const checked = !!event?.target?.checked;
+    setRepeatUntilWeekEnd(checked);
+
+    if (checked && valuePatternId && !repeatUntilWeekDisabled) {
+      emitChange(String(valuePatternId), true);
+    }
+  }
 
   return (
     <div
       className='rounded-xl border bg-white shadow-sm'
       style={{ borderColor: color.border, backgroundColor: disabled ? '#FAFAFA' : color.bg }}
     >
-      <div className='px-3 pt-3'>
+      <div className='px-3 pt-3 pb-3'>
         <div className='text-xs text-slate-500'>Jadwal (riwayat)</div>
 
         <AppSelect
@@ -71,7 +94,7 @@ export default function ScheduleCellCard({ date, isPast, patterns, valuePatternI
           className='w-full mt-2'
           placeholder='Tidak Ada Riwayat'
           value={valuePatternId ? String(valuePatternId) : undefined}
-          onChange={(v) => onChange(v)}
+          onChange={(v) => emitChange(v)}
           allowClear
           disabled={disabled}
           options={options}
@@ -83,8 +106,22 @@ export default function ScheduleCellCard({ date, isPast, patterns, valuePatternI
             style={{ backgroundColor: dot }}
           />
           <AppTooltip title={selected?.nama_pola_kerja || ''}>
-            <Text className='text-xs text-slate-600 truncate'>{selected ? `${selected.nama_pola_kerja} • ${formatTimeRange(selected) || '—'}` : '—'}</Text>
+            <Text className='text-xs text-slate-600 truncate'>{selected ? `${selected.nama_pola_kerja} | ${formatTimeRange(selected) || '-'}` : '-'}</Text>
           </AppTooltip>
+        </div>
+
+        <div className='mt-3 border-t border-slate-200 pt-2'>
+          <AppCheckbox
+            checked={repeatUntilWeekEnd}
+            disabled={repeatUntilWeekDisabled}
+            onChange={handleToggleRepeat}
+          >
+            <span className='text-xs text-slate-600'>Ulangi sampai akhir minggu</span>
+          </AppCheckbox>
+
+          {repeatUntilEndOfMonthEnabled ? (
+            <Text className='mt-1 block text-[11px] text-slate-400'>Nonaktif saat ulang sampai akhir bulan aktif.</Text>
+          ) : null}
         </div>
       </div>
     </div>

@@ -26,6 +26,21 @@ describe('lib/error', () => {
     expect(ae.code).toBe('invalid_json');
   });
 
+  it('normalizeToAppError: Prisma P2002 pada nip -> 409 unique_violation dengan pesan spesifik', () => {
+    const err = {
+      name: 'PrismaClientKnownRequestError',
+      code: 'P2002',
+      meta: { target: ['nip'] },
+    };
+
+    const ae = normalizeToAppError(err);
+
+    expect(ae.status).toBe(409);
+    expect(ae.code).toBe('unique_violation');
+    expect(ae.detail).toBe('NIP sudah digunakan');
+    expect(ae.errors).toMatchObject({ target: ['nip'], field: 'nip' });
+  });
+
   it('normalizeToAppError: JWTExpired -> 401 token_expired', () => {
     const e = Object.assign(new Error('expired'), { name: 'JWTExpired' });
     const ae = normalizeToAppError(e);

@@ -117,15 +117,16 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
                     className='px-4 py-4 border-r border-slate-100'
                   >
                     <ScheduleCellCard
-                      date={d}
                       isPast={isPast(d)}
                       patterns={patterns}
+                      repeatUntilEndOfMonthEnabled={repeatOn}
                       valuePatternId={assigned?.id_pola_kerja ?? null}
-                      onChange={(nextPatternId) => {
+                      onChange={(nextPatternId, options) => {
                         onChangeAssignment({
                           userId,
                           date: d,
                           patternId: nextPatternId,
+                          repeatUntilWeekEnd: !!options?.repeatUntilWeekEnd,
                         });
                       }}
                     />

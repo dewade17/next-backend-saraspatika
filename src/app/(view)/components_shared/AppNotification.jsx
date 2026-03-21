@@ -46,9 +46,24 @@ function extractMessageFromUnknown(err) {
 
   if (typeof err === 'string') return err;
   if (typeof err === 'number') return String(err);
-  if (err instanceof Error) return err.message || null;
 
   const e = err;
+
+  const structured =
+    pickFirstString(
+      e?.problem?.detail,
+      e?.problem?.title,
+      e?.responseBody?.detail,
+      e?.responseBody?.title,
+      e?.response?.data?.detail,
+      e?.response?.data?.title,
+      e?.detail,
+      e?.title,
+    ) || null;
+
+  if (structured) return structured;
+
+  if (err instanceof Error) return err.message || null;
 
   const direct =
     pickFirstString(
