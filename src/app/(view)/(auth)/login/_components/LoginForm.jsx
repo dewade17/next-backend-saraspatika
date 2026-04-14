@@ -11,6 +11,7 @@ export default function LoginForm({ onFinish, loading }) {
       layout='vertical'
       onFinish={onFinish}
       requiredMark={false}
+      initialValues={{ rememberMe: false }}
     >
       <AppForm.Item
         label='Email'
@@ -45,7 +46,13 @@ export default function LoginForm({ onFinish, loading }) {
           marginBottom: 18,
         }}
       >
-        <Checkbox>Ingatkan saya</Checkbox>
+        <AppForm.Item
+          name='rememberMe'
+          valuePropName='checked'
+          noStyle
+        >
+          <Checkbox>Ingatkan saya</Checkbox>
+        </AppForm.Item>
         <a
           href='/forgot-password'
           style={{ fontSize: 12, textDecoration: 'none' }}

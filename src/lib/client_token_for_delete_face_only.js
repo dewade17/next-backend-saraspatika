@@ -1,27 +1,29 @@
 export const AUTH_TOKEN_STORAGE_KEY = 'access_token';
 
-function safeGetLocalStorage(key) {
+function getStorage(storageType) {
+  if (typeof window === 'undefined') return null;
+  return storageType === 'session' ? window.sessionStorage ?? null : window.localStorage ?? null;
+}
+
+function safeGetStorage(storageType, key) {
   try {
-    if (typeof window === 'undefined') return null;
-    return window.localStorage?.getItem(key) ?? null;
+    return getStorage(storageType)?.getItem(key) ?? null;
   } catch {
     return null;
   }
 }
 
-function safeSetLocalStorage(key, value) {
+function safeSetStorage(storageType, key, value) {
   try {
-    if (typeof window === 'undefined') return;
-    window.localStorage?.setItem(key, value);
+    getStorage(storageType)?.setItem(key, value);
   } catch {
     // ignore
   }
 }
 
-function safeRemoveLocalStorage(key) {
+function safeRemoveStorage(storageType, key) {
   try {
-    if (typeof window === 'undefined') return;
-    window.localStorage?.removeItem(key);
+    getStorage(storageType)?.removeItem(key);
   } catch {
     // ignore
   }
@@ -34,15 +36,17 @@ export function normalizeJwtToken(token) {
 }
 
 export function getClientAccessToken() {
-  return safeGetLocalStorage(AUTH_TOKEN_STORAGE_KEY);
+  return safeGetStorage('session', AUTH_TOKEN_STORAGE_KEY) ?? safeGetStorage('local', AUTH_TOKEN_STORAGE_KEY);
 }
 
-export function setClientAccessToken(token) {
+export function setClientAccessToken(token, options = {}) {
   const t = normalizeJwtToken(token);
   if (!t) return;
-  safeSetLocalStorage(AUTH_TOKEN_STORAGE_KEY, t);
+  clearClientAccessToken();
+  safeSetStorage(options?.rememberMe === true ? 'local' : 'session', AUTH_TOKEN_STORAGE_KEY, t);
 }
 
 export function clearClientAccessToken() {
-  safeRemoveLocalStorage(AUTH_TOKEN_STORAGE_KEY);
+  safeRemoveStorage('session', AUTH_TOKEN_STORAGE_KEY);
+  safeRemoveStorage('local', AUTH_TOKEN_STORAGE_KEY);
 }

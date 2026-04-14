@@ -38,7 +38,7 @@ describe('auth routes', () => {
     const req = new Request('http://localhost/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'a@b.com', password: 'x' }),
+      body: JSON.stringify({ email: 'a@b.com', password: 'x', rememberMe: true }),
     });
 
     const res = await loginRoute.POST(req);
@@ -46,7 +46,7 @@ describe('auth routes', () => {
 
     const body = await res.json();
     expect(body).toEqual({ ok: true, token: 't1' });
-    expect(cookieLib.setAuthCookie).toHaveBeenCalledWith('t1');
+    expect(cookieLib.setAuthCookie).toHaveBeenCalledWith('t1', { rememberMe: true });
   });
 
   it('POST /auth/login: validation error -> 400 problem json', async () => {

@@ -23,6 +23,7 @@ describe('auth_validation', () => {
     });
 
     expect(v.email).toBe('a@b.com');
+    expect(v.rememberMe).toBe(false);
   });
 
   it('requestTokenValidation: requires valid email', async () => {
