@@ -6,10 +6,9 @@ import { login } from '@/services/auth/auth_service.js';
 
 export const POST = apiRoute(async (req) => {
   const input = await parseBody(req, loginValidation);
-  const { rememberMe, ...credentials } = input;
-  const { token } = await login(credentials);
+  const { token } = await login(input);
 
-  await setAuthCookie(token, { rememberMe });
+  await setAuthCookie(token);
 
   return NextResponse.json({ ok: true, token });
 });

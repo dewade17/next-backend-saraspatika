@@ -4,12 +4,36 @@ import { Checkbox } from 'antd';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
+import { clearRememberedLoginEmail, loadRememberedLoginEmail, saveRememberedLoginEmail } from '@/lib/remember_login_email.js';
 
 export default function LoginForm({ onFinish, loading }) {
+  const form = AppForm.useForm();
+
+  React.useEffect(() => {
+    const rememberedEmail = loadRememberedLoginEmail();
+    if (!rememberedEmail) return;
+
+    form.setFieldsValue({
+      email: rememberedEmail,
+      rememberMe: true,
+    });
+  }, [form]);
+
+  const handleFinish = React.useCallback(
+    (values) => {
+      if (values?.rememberMe) saveRememberedLoginEmail(values?.email);
+      else clearRememberedLoginEmail();
+
+      return onFinish?.(values);
+    },
+    [onFinish],
+  );
+
   return (
     <AppForm
+      form={form}
       layout='vertical'
-      onFinish={onFinish}
+      onFinish={handleFinish}
       requiredMark={false}
       initialValues={{ rememberMe: false }}
     >

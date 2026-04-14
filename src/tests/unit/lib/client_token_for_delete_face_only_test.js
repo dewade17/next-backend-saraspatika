@@ -24,36 +24,30 @@ describe('lib/client_token_for_delete_face_only', () => {
   beforeEach(() => {
     globalThis.window = {
       localStorage: createStorageMock(),
-      sessionStorage: createStorageMock(),
     };
     window.localStorage.clear();
-    window.sessionStorage.clear();
   });
 
-  it('stores token in sessionStorage by default', () => {
+  it('stores token in localStorage', () => {
     setClientAccessToken('Bearer token-1');
 
-    expect(window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBe('token-1');
-    expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBe('token-1');
     expect(getClientAccessToken()).toBe('token-1');
   });
 
-  it('stores token in localStorage when rememberMe enabled', () => {
-    setClientAccessToken('token-2', { rememberMe: true });
+  it('setClientAccessToken: ignores empty token', () => {
+    setClientAccessToken('   ');
 
-    expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBe('token-2');
-    expect(window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBeNull();
-    expect(getClientAccessToken()).toBe('token-2');
+    expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(getClientAccessToken()).toBeNull();
   });
 
-  it('clearClientAccessToken: removes token from both storages', () => {
+  it('clearClientAccessToken: removes token from localStorage', () => {
     window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, 'local-token');
-    window.sessionStorage.setItem(AUTH_TOKEN_STORAGE_KEY, 'session-token');
 
     clearClientAccessToken();
 
     expect(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBeNull();
-    expect(window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY)).toBeNull();
     expect(getClientAccessToken()).toBeNull();
   });
 });

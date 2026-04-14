@@ -13,17 +13,15 @@ export function useLogin() {
   const handleLogin = async (values) => {
     setIsSubmitting(true);
     try {
-      const rememberMe = values?.rememberMe === true;
       const res = await client.post('/api/auth/login', {
         json: {
           email: values.email,
           password: values.password,
-          rememberMe,
         },
       });
 
       // simpan token untuk opsi B (call langsung ke backend Python)
-      if (res?.token) setClientAccessToken(res.token, { rememberMe });
+      if (res?.token) setClientAccessToken(res.token);
 
       message.success('Berhasil masuk');
       router.push('/home/dashboard');
