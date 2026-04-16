@@ -8,6 +8,7 @@ import { findUserByEmail, findUserById, createUserWithRole, createPasswordResetT
 
 const DEFAULT_ROLE = 'GURU';
 const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']);
+const INVALID_CREDENTIALS_MESSAGE = 'Email atau kata sandi yang Anda masukkan salah. Silakan coba lagi.';
 
 function normalizeEmail(email) {
   return String(email || '')
@@ -49,10 +50,10 @@ export async function register({ name, email, password, role_name, autoLogin = t
 export async function login({ email, password }) {
   const normalizedEmail = normalizeEmail(email);
   const user = await findUserByEmail(normalizedEmail);
-  if (!user) throw unauthorized('Invalid credentials', { code: 'invalid_credentials' });
+  if (!user) throw unauthorized(INVALID_CREDENTIALS_MESSAGE, { code: 'invalid_credentials' });
 
   const ok = await verifyPassword(password, user.password_hash);
-  if (!ok) throw unauthorized('Invalid credentials', { code: 'invalid_credentials' });
+  if (!ok) throw unauthorized(INVALID_CREDENTIALS_MESSAGE, { code: 'invalid_credentials' });
 
   const perms = Array.from(await getPermSet(user.id_user));
   const token = await issueAccessToken({ sub: user.id_user, email: user.email, perms }, '365d');
