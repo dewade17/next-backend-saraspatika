@@ -106,7 +106,7 @@ function buildRoleMatrix() {
   grant(['GURU', 'PEGAWAI'], 'absensi', ['create', 'read', 'update']);
   grant(['GURU', 'PEGAWAI'], 'wajah', ['create', 'read']); // Ini untuk upload wajah
   grant(['GURU', 'PEGAWAI'], 'agenda', CRUD);
-  grant(['GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update']);
+  grant(['GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update', 'delete']);
   grant(['GURU', 'PEGAWAI'], 'lokasi', ['read']);
   grant(['GURU', 'PEGAWAI'], 'shift_kerja', ['read']);
 
