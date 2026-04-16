@@ -388,7 +388,7 @@ function AdminDashboardShell({ children }) {
           </AppFlex>
 
           <Content style={{ margin: '24px', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>{children}</Content>
-          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>Si Hadir Saraspatika ©{new Date().getFullYear()}</Footer>
+          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>Saraspatika ©{new Date().getFullYear()}</Footer>
         </Layout>
       </Layout>
 
