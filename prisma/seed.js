@@ -107,6 +107,7 @@ function buildRoleMatrix() {
   grant(['GURU', 'PEGAWAI'], 'wajah', ['create', 'read']); // Ini untuk upload wajah
   grant(['GURU', 'PEGAWAI'], 'agenda', CRUD);
   grant(['GURU', 'PEGAWAI'], 'izin', ['create', 'read', 'update']);
+  grant(['GURU', 'PEGAWAI'], 'lokasi', ['read']);
   grant(['GURU', 'PEGAWAI'], 'shift_kerja', ['read']);
 
   // 2. WEWENANG ADMIN & KEPALA SEKOLAH (Manajerial)
