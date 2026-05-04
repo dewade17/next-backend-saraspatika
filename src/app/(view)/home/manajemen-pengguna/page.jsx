@@ -9,6 +9,7 @@ import UserFormModal from './_components/UserFormModal';
 import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useSubmitUser } from './_hooks/useSubmitUser';
 import { useDeleteUser } from './_hooks/useDeleteUser';
+import { useResetUserDevice } from './_hooks/useResetUserDevice';
 import { buildUserSearchIndex, normalizeQuery } from './_utils/userHelpers';
 import { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
@@ -34,6 +35,11 @@ export default function ManajemenPenggunaPage() {
   });
 
   const { deletingId, handleDelete } = useDeleteUser({
+    client,
+    message,
+    onSuccess: fetchUsers,
+  });
+  const { resettingId, handleResetDevice } = useResetUserDevice({
     client,
     message,
     onSuccess: fetchUsers,
@@ -142,9 +148,11 @@ export default function ManajemenPenggunaPage() {
                   key={u.id_user}
                   user={u}
                   isDeleting={deletingId === u.id_user}
+                  isResettingDevice={resettingId === u.id_user}
                   onEdit={openEdit}
                   onDelete={handleDelete}
                   onPermission={openPermission}
+                  onResetDevice={handleResetDevice}
                 />
               ))}
             </AppGrid>

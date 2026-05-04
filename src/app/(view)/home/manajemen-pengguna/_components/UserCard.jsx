@@ -1,11 +1,13 @@
 import React from 'react';
-import { EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, KeyOutlined, DisconnectOutlined, MobileOutlined } from '@ant-design/icons';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppTypography from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppButton from '@/app/(view)/components_shared/AppButton.jsx';
 import { safeText } from '../_utils/userHelpers';
 
-function UserCard({ user, onEdit, onDelete, onPermission, isDeleting }) {
+function UserCard({ user, onEdit, onDelete, onPermission, onResetDevice, isDeleting, isResettingDevice }) {
+  const device = user?.device;
+
   return (
     <AppCard
       bordered
@@ -37,9 +39,15 @@ function UserCard({ user, onEdit, onDelete, onPermission, isDeleting }) {
         >
           <span style={{ fontWeight: 700 }}>No.HP</span> : {safeText(user?.nomor_handphone)}
         </AppTypography>
+        <AppTypography
+          as='text'
+          style={{ display: 'block', marginTop: 6 }}
+        >
+          <span style={{ fontWeight: 700 }}>Perangkat</span> : {device ? safeText(device.device_name || device.device_platform, 'Terdaftar') : 'Belum terdaftar'}
+        </AppTypography>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         <AppButton
           type='default'
           size='small'
@@ -47,6 +55,22 @@ function UserCard({ user, onEdit, onDelete, onPermission, isDeleting }) {
           onClick={() => onPermission?.(user)}
         >
           Permission
+        </AppButton>
+        <AppButton
+          type='default'
+          size='small'
+          icon={device ? <DisconnectOutlined /> : <MobileOutlined />}
+          loading={isResettingDevice}
+          disabled={!device}
+          confirm={{
+            title: 'Reset perangkat pengguna ini?',
+            description: 'Pengguna harus login ulang dari perangkat baru setelah reset.',
+            okText: 'Reset',
+            cancelText: 'Batal',
+          }}
+          onClick={() => onResetDevice?.(user)}
+        >
+          Reset Perangkat
         </AppButton>
       </div>
 

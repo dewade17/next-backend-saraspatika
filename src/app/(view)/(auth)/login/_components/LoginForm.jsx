@@ -43,7 +43,7 @@ export default function LoginForm({ onFinish, loading }) {
         rules={[{ required: true, message: 'Masukkan email Anda!' }]}
       >
         <AppInput
-          prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+          prefix={<UserOutlined style={{ color: '#595959' }} />}
           placeholder='nama@email.com'
           size='large'
         />
@@ -55,7 +55,7 @@ export default function LoginForm({ onFinish, loading }) {
         rules={[{ required: true, message: 'Masukkan password Anda!' }]}
       >
         <AppInput.Password
-          prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+          prefix={<LockOutlined style={{ color: '#595959' }} />}
           placeholder='********'
           size='large'
         />
@@ -94,8 +94,9 @@ export default function LoginForm({ onFinish, loading }) {
         style={{
           height: 44,
           fontWeight: 600,
-          backgroundColor: '#86D7A0',
-          borderColor: '#86D7A0',
+          backgroundColor: '#237804',
+          borderColor: '#237804',
+          color: '#ffffff',
         }}
       >
         Masuk

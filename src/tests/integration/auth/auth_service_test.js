@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const repo = {
   findUserByEmail: vi.fn(),
   findUserById: vi.fn(),
+  findUserDeviceByHash: vi.fn(),
+  bindOrTouchUserDevice: vi.fn(),
   createUserWithRole: vi.fn(),
   createPasswordResetToken: vi.fn(),
   findLatestValidResetToken: vi.fn(),
@@ -11,7 +13,7 @@ const repo = {
 vi.mock('@/repositories/auth/auth_repo.js', () => repo);
 
 const rbac = { getPermSet: vi.fn() };
-vi.mock('@/lib/rbac.js', () => rbac);
+vi.mock('@/lib/rbac_server.js', () => rbac);
 
 const jwt = { issueAccessToken: vi.fn() };
 vi.mock('@/lib/jwt.js', () => jwt);
@@ -37,6 +39,8 @@ beforeEach(async () => {
 
   jwt.issueAccessToken.mockResolvedValue('jwt.token');
   rbac.getPermSet.mockResolvedValue(new Set(['users:read']));
+  repo.findUserDeviceByHash.mockResolvedValue(null);
+  repo.bindOrTouchUserDevice.mockResolvedValue({ matched: true, device: { id_device: 'd1' } });
 
   bcryptMock.hash.mockResolvedValue('code_hash');
   bcryptMock.compare.mockResolvedValue(true);
@@ -99,7 +103,7 @@ describe('auth_service', () => {
   it('login: unauthorized when user not found', async () => {
     repo.findUserByEmail.mockResolvedValue(null);
 
-    await expect(svc.login({ email: 'a@b.com', password: 'x' })).rejects.toMatchObject({
+    await expect(svc.login({ email: 'a@b.com', password: 'x', deviceId: 'device-1234567890' })).rejects.toMatchObject({
       status: 401,
       code: 'invalid_credentials',
     });
@@ -109,15 +113,15 @@ describe('auth_service', () => {
     repo.findUserByEmail.mockResolvedValue({ id_user: 'u1', email: 'a@b.com', password_hash: 'h' });
     crypto.verifyPassword.mockResolvedValue(false);
 
-    await expect(svc.login({ email: 'a@b.com', password: 'x' })).rejects.toMatchObject({
+    await expect(svc.login({ email: 'a@b.com', password: 'x', deviceId: 'device-1234567890' })).rejects.toMatchObject({
       status: 401,
       code: 'invalid_credentials',
     });
   });
 
   it('login: returns token when ok', async () => {
-    repo.findUserByEmail.mockResolvedValue({ id_user: 'u1', email: 'a@b.com', password_hash: 'h' });
-    const res = await svc.login({ email: 'a@b.com', password: 'x' });
+    repo.findUserByEmail.mockResolvedValue({ id_user: 'u1', email: 'a@b.com', password_hash: 'h', session_version: 0 });
+    const res = await svc.login({ email: 'a@b.com', password: 'x', deviceId: 'device-1234567890' });
 
     expect(jwt.issueAccessToken).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', email: 'a@b.com' }), '20m');
     expect(res.token).toBe('jwt.token');

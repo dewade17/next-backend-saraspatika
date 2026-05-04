@@ -218,7 +218,7 @@ function AdminDashboardShell({ children }) {
     await logout();
   };
 
-  const primaryColor = '#1677ff';
+  const primaryColor = '#0958d9';
   const sidebarBg = '#d9f2d0'; // Hijau pastel sesuai gambar
   const headerBg = '#bae7ff'; // Biru muda sesuai gambar
   const selectedMenuBg = '#91d5ff'; // Biru highlight menu aktif
@@ -265,6 +265,13 @@ function AdminDashboardShell({ children }) {
         },
         token: {
           colorPrimary: primaryColor,
+          colorLink: primaryColor,
+          colorInfo: primaryColor,
+          colorSuccess: '#237804',
+          colorWarning: '#874d00',
+          colorError: '#cf1322',
+          colorTextSecondary: '#595959',
+          colorTextTertiary: '#595959',
           borderRadius: 8,
         },
       }}
@@ -376,7 +383,7 @@ function AdminDashboardShell({ children }) {
               >
                 <div style={{ textAlign: 'right', lineHeight: '1.2' }}>
                   <div style={{ fontWeight: 600, color: '#262626' }}>{userLabel}</div>
-                  <div style={{ fontSize: 12, color: '#8c8c8c' }}>{user?.role}</div>
+                  <div style={{ fontSize: 12, color: '#595959' }}>{user?.role}</div>
                 </div>
 
                 <AppAvatar
@@ -388,7 +395,7 @@ function AdminDashboardShell({ children }) {
           </AppFlex>
 
           <Content style={{ margin: '24px', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>{children}</Content>
-          <Footer style={{ textAlign: 'center', color: '#8c8c8c' }}>Saraspatika ©{new Date().getFullYear()}</Footer>
+          <Footer style={{ textAlign: 'center', color: '#595959' }}>Saraspatika ©{new Date().getFullYear()}</Footer>
         </Layout>
       </Layout>
 

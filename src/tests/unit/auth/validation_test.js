@@ -20,6 +20,7 @@ describe('auth_validation', () => {
     const v = await loginValidation.parseAsync({
       email: '  a@b.com  ',
       password: 'x',
+      deviceId: '12345678-1234-1234-1234-123456789012',
     });
 
     expect(v.email).toBe('a@b.com');

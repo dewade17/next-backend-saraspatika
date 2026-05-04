@@ -38,7 +38,7 @@ describe('auth routes', () => {
     const req = new Request('http://localhost/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'a@b.com', password: 'x' }),
+      body: JSON.stringify({ email: 'a@b.com', password: 'x', deviceId: '12345678-1234-1234-1234-123456789012' }),
     });
 
     const res = await loginRoute.POST(req);

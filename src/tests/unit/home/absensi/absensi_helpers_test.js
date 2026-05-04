@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  aggregateAbsensiHarian,
-  countTotalKehadiran,
-  summarizeAbsensi,
-} from '@/app/(view)/home/(absensi)/_utils/absensiHelpers';
+import { aggregateAbsensiHarian, countTotalKehadiran, normalizeAbsensiRow, sortAbsensiRows, summarizeAbsensi } from '@/app/(view)/home/(absensi)/_utils/absensiHelpers';
 
 describe('absensiHelpers.countTotalKehadiran - hitung total kehadiran', () => {
   it('menghitung id_user unik dan mengabaikan nilai nullish atau kosong', () => {
@@ -61,5 +57,45 @@ describe('absensiHelpers.summarizeAbsensi - ringkasan absensi', () => {
       tepatWaktu: 3,
       terlambat: 1,
     });
+  });
+});
+
+describe('absensiHelpers.normalizeAbsensiRow - model absensi', () => {
+  it('memberi label Sekolah untuk absensi reguler', () => {
+    expect(normalizeAbsensiRow({ id_absensi: 'a1' }, { model: 'SEKOLAH' })).toMatchObject({
+      row_key: 'sekolah:a1',
+      source_absensi: 'SEKOLAH',
+      model_absensi: 'Sekolah',
+    });
+  });
+
+  it('memberi label WFH dan nama lokasi WFH untuk absensi WFH', () => {
+    expect(
+      normalizeAbsensiRow(
+        {
+          id_absensi_wfh: 'w1',
+          in: { latitude: -8.1, longitude: 115.1 },
+          out: { latitude: -8.2, longitude: 115.2 },
+        },
+        { model: 'WFH' },
+      ),
+    ).toMatchObject({
+      row_key: 'wfh:w1',
+      source_absensi: 'WFH',
+      model_absensi: 'WFH',
+      in: { lokasi: { nama_lokasi: 'WFH' } },
+      out: { lokasi: { nama_lokasi: 'WFH' } },
+    });
+  });
+});
+
+describe('absensiHelpers.sortAbsensiRows - urutan gabungan', () => {
+  it('mengurutkan data Sekolah dan WFH dari waktu masuk terbaru', () => {
+    const rows = [
+      { row_key: 'sekolah:a1', waktu_masuk: '2026-05-01T00:00:00.000Z' },
+      { row_key: 'wfh:w1', waktu_masuk: '2026-05-02T00:00:00.000Z' },
+    ];
+
+    expect(sortAbsensiRows(rows).map((row) => row.row_key)).toEqual(['wfh:w1', 'sekolah:a1']);
   });
 });

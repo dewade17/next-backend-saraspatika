@@ -9,6 +9,17 @@ const publicSelect = {
   nip: true,
   foto_profil_url: true,
   role: true,
+  session_version: true,
+  device: {
+    select: {
+      id_device: true,
+      device_name: true,
+      device_platform: true,
+      last_ip: true,
+      registered_at: true,
+      last_login_at: true,
+    },
+  },
   created_at: true,
   updated_at: true,
 };
@@ -122,5 +133,19 @@ export async function deleteUser(id_user) {
   return await prisma.user.delete({
     where: { id_user },
     select: publicSelect,
+  });
+}
+
+export async function resetUserDevice(id_user) {
+  return await prisma.$transaction(async (tx) => {
+    await tx.userDevice.deleteMany({ where: { id_user } });
+
+    return await tx.user.update({
+      where: { id_user },
+      data: {
+        session_version: { increment: 1 },
+      },
+      select: publicSelect,
+    });
   });
 }

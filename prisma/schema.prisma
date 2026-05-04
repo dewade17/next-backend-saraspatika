@@ -45,15 +45,18 @@ model User {
   nip             String?  @unique
   foto_profil_url String?  @db.Text
   role            String   @default("GURU")
+  session_version Int      @default(0)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
   user_roles        UserRole[]
   overrides         UserPermissionOverride[]
   reset_tokens      PasswordResetToken[]
+  device            UserDevice?
   jadwalShiftKerjas JadwalShiftKerja[]
   userFace          UserFace?
   absensis          Absensi[]
+  absensi_wfh       AbsensiWfh[]
   face_requests     FaceResetRequest[]       @relation("UserRequests")
   admin_decisions   FaceResetRequest[]       @relation("AdminDecisions")
   pengajuans        PengajuanAbsensi[]       @relation("UserPengajuan")
@@ -61,6 +64,25 @@ model User {
   agendas           Agenda[]
 
   @@map("users")
+}
+
+model UserDevice {
+  id_device       String   @id @default(uuid())
+  id_user         String   @unique
+  device_id_hash  String   @unique
+  device_name     String?
+  device_platform String?
+  last_ip         String?
+  last_user_agent String?  @db.Text
+  registered_at   DateTime @default(now())
+  last_login_at   DateTime @default(now())
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@index([last_login_at])
+  @@map("user_devices")
 }
 
 model PasswordResetToken {
@@ -241,6 +263,37 @@ model Absensi {
   @@index([waktu_masuk])
   @@index([correlation_id]) // Opsional: Tambahan index eksplisit jika diperlukan
   @@map("absensi")
+}
+
+model AbsensiWfh {
+  id_absensi_wfh String @id @default(uuid())
+  id_user        String
+
+  correlation_id String? @unique @db.Char(36)
+
+  waktu_masuk  DateTime  @default(now())
+  waktu_pulang DateTime?
+
+  face_verified_masuk  Boolean @default(false)
+  face_verified_pulang Boolean @default(false)
+
+  status_masuk  StatusAbsensi?
+  status_pulang StatusAbsensi?
+
+  in_latitude   Decimal? @db.Decimal(10, 6)
+  in_longitude  Decimal? @db.Decimal(10, 6)
+  out_latitude  Decimal? @db.Decimal(10, 6)
+  out_longitude Decimal? @db.Decimal(10, 6)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@index([id_user])
+  @@index([waktu_masuk])
+  @@index([correlation_id])
+  @@map("absensi_wfh")
 }
 
 model FaceResetRequest {

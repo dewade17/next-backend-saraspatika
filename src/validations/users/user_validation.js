@@ -35,7 +35,7 @@ function optRole() {
 export const userCreateValidation = z.object({
   email: z.string().trim().email().max(254),
   name: optTrim(120),
-  password: z.string().min(8).max(72),
+  password: optPassword(),
   status: optTrim(80),
   nomor_handphone: optTrim(40),
   nip: optTrim(40),

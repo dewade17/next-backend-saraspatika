@@ -119,7 +119,7 @@ export default function ScheduleCellCard({ isPast, patterns, valuePatternId, onC
             <span className='text-xs text-slate-600'>Ulangi sampai akhir minggu</span>
           </AppCheckbox>
 
-          {repeatUntilEndOfMonthEnabled ? <Text className='mt-1 block text-[11px] text-slate-400'>Pengulangan aktif hanya sampai akhir bulan berjalan</Text> : null}
+          {repeatUntilEndOfMonthEnabled ? <Text className='mt-1 block text-[11px] text-slate-600'>Pengulangan aktif hanya sampai akhir bulan berjalan</Text> : null}
         </div>
       </div>
     </div>

@@ -1,5 +1,67 @@
 import dayjs from 'dayjs';
 
+export const ABSENSI_MODEL = {
+  SEKOLAH: 'SEKOLAH',
+  WFH: 'WFH',
+};
+
+export function getAbsensiModelLabel(model) {
+  const m = String(model ?? '')
+    .trim()
+    .toUpperCase();
+  return m === ABSENSI_MODEL.WFH ? 'WFH' : 'Sekolah';
+}
+
+function normalizeAbsensiModel(model) {
+  const m = String(model ?? '')
+    .trim()
+    .toUpperCase();
+  return m === ABSENSI_MODEL.WFH ? ABSENSI_MODEL.WFH : ABSENSI_MODEL.SEKOLAH;
+}
+
+function normalizeModelSlot(slot, sourceModel) {
+  if (sourceModel !== ABSENSI_MODEL.WFH) return slot ?? null;
+  if (!slot || typeof slot !== 'object') return slot ?? null;
+  if (slot.lokasi) return slot;
+  return {
+    ...slot,
+    lokasi: {
+      nama_lokasi: 'WFH',
+    },
+  };
+}
+
+export function normalizeAbsensiRow(row, { model = ABSENSI_MODEL.SEKOLAH, index = 0 } = {}) {
+  if (!row || typeof row !== 'object') return row;
+
+  const sourceModel = normalizeAbsensiModel(model);
+  const primaryId = sourceModel === ABSENSI_MODEL.WFH ? (row.id_absensi_wfh ?? row.id_absensi) : (row.id_absensi ?? row.id_absensi_wfh);
+  const fallbackId = row.correlation_id ?? index;
+
+  return {
+    ...row,
+    row_key: row.row_key ?? `${sourceModel.toLowerCase()}:${String(primaryId ?? fallbackId)}`,
+    source_absensi: row.source_absensi ?? sourceModel,
+    model_absensi: row.model_absensi ?? getAbsensiModelLabel(sourceModel),
+    in: normalizeModelSlot(row.in, sourceModel),
+    out: normalizeModelSlot(row.out, sourceModel),
+  };
+}
+
+function toTimeMs(value) {
+  if (!value) return 0;
+  const n = Date.parse(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function sortAbsensiRows(rows) {
+  return [...(Array.isArray(rows) ? rows : [])].sort((a, b) => {
+    const timeDiff = toTimeMs(b?.waktu_masuk) - toTimeMs(a?.waktu_masuk);
+    if (timeDiff !== 0) return timeDiff;
+    return String(a?.row_key ?? '').localeCompare(String(b?.row_key ?? ''));
+  });
+}
+
 export function toDateKey(value) {
   if (!value) return null;
   const d = dayjs(value);

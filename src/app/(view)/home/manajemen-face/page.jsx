@@ -137,7 +137,7 @@ export default function ManajemenFacePage() {
             />
             <div>
               <div style={{ fontWeight: 600 }}>{record?.user?.name}</div>
-              <div style={{ fontSize: '11px', color: 'gray' }}>{record?.user?.email}</div>
+              <div style={{ fontSize: '11px', color: '#595959' }}>{record?.user?.email}</div>
             </div>
           </AppFlex>
         ),
@@ -184,7 +184,7 @@ export default function ManajemenFacePage() {
               </AppButton>
             </AppFlex>
           ) : (
-            <span style={{ color: '#bfbfbf', fontSize: '12px' }}>Sudah Diproses</span>
+            <span style={{ color: '#595959', fontSize: '12px' }}>Sudah Diproses</span>
           ),
       },
     ],
@@ -216,14 +216,14 @@ export default function ManajemenFacePage() {
             onClick={() => setActiveView('1')}
             style={{
               transition: '0.3s',
-              borderBottom: activeView === '1' ? '4px solid #1677ff' : '4px solid transparent',
+              borderBottom: activeView === '1' ? '4px solid #0958d9' : '4px solid transparent',
               background: activeView === '1' ? '#f0f5ff' : '#fff',
             }}
           >
             <AppStatistic
               title='Total Data Terdaftar'
               value={stats.totalActive}
-              prefix={<UserOutlined style={{ color: '#1677ff' }} />}
+              prefix={<UserOutlined style={{ color: '#0958d9' }} />}
             />
           </AppCard>
         </AppCol>
@@ -236,14 +236,14 @@ export default function ManajemenFacePage() {
             onClick={() => setActiveView('2')}
             style={{
               transition: '0.3s',
-              borderBottom: activeView === '2' ? '4px solid #ff4d4f' : '4px solid transparent',
+              borderBottom: activeView === '2' ? '4px solid #cf1322' : '4px solid transparent',
               background: activeView === '2' ? '#fff1f0' : '#fff',
             }}
           >
             <AppStatistic
               title='Permintaan Reset (Pending)'
               value={stats.pendingCount}
-              valueStyle={{ color: stats.pendingCount > 0 ? '#cf1322' : '#3f8600' }}
+              valueStyle={{ color: stats.pendingCount > 0 ? '#cf1322' : '#237804' }}
               prefix={<HistoryOutlined />}
             />
           </AppCard>

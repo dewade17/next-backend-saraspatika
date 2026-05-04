@@ -100,7 +100,7 @@ export default function ShiftGridTable({ weekDates, users, patterns, loadingUser
 
                   {savingRepeat ? (
                     <div className='mt-1'>
-                      <Text className='text-xs text-slate-400'>Menerapkan pengulangan...</Text>
+                      <Text className='text-xs text-slate-600'>Menerapkan pengulangan...</Text>
                     </div>
                   ) : null}
                 </div>

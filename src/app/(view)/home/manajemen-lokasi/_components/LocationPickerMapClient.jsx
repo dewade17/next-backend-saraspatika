@@ -101,7 +101,7 @@ export default function LocationPickerMapClient({ latitude, longitude, onPick, h
             radius={9}
             pathOptions={{
               color: '#ffffff',
-              fillColor: '#1677ff',
+              fillColor: '#0958d9',
               fillOpacity: 1,
               weight: 3,
             }}

@@ -239,7 +239,7 @@ function FieldChrome({ label, required, extra, help, error, style, className, ch
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ fontWeight: 600, fontSize: 13, lineHeight: '18px' }}>
             {label}
-            {required ? <span style={{ marginInlineStart: 6, color: 'var(--ant-colorError, #ff4d4f)' }}>*</span> : null}
+            {required ? <span style={{ marginInlineStart: 6, color: 'var(--ant-colorError, #cf1322)' }}>*</span> : null}
           </div>
           {extra != null ? <div style={{ opacity: 0.8 }}>{extra}</div> : null}
         </div>
@@ -247,7 +247,7 @@ function FieldChrome({ label, required, extra, help, error, style, className, ch
 
       {children}
 
-      {hasError ? <div style={{ fontSize: 12, color: 'var(--ant-colorError, #ff4d4f)', lineHeight: '16px' }}>{error}</div> : hasHelp ? <div style={{ fontSize: 12, opacity: 0.75, lineHeight: '16px' }}>{help}</div> : null}
+      {hasError ? <div style={{ fontSize: 12, color: 'var(--ant-colorError, #cf1322)', lineHeight: '16px' }}>{error}</div> : hasHelp ? <div style={{ fontSize: 12, opacity: 0.75, lineHeight: '16px' }}>{help}</div> : null}
     </div>
   );
 }

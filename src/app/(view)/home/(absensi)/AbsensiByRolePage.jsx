@@ -45,18 +45,28 @@ function downloadText(filename, content, mime = 'text/csv;charset=utf-8') {
   URL.revokeObjectURL(url);
 }
 function buildAbsensiCsv({ rows, fileName }) {
-  // 1. Definisikan header tanpa kolom koordinat
-  const headers = ['Tanggal', 'Nama', 'NIP/NIK', 'Jam Kedatangan', 'Status Kedatangan', 'Lokasi Kedatangan', 'Jam Kepulangan', 'Status Kepulangan', 'Lokasi Kepulangan'];
+  const headers = ['Tanggal', 'Nama', 'NIP/NIK', 'Model Absensi', 'Jam Kedatangan', 'Status Kedatangan', 'Lokasi Kedatangan', 'Jam Kepulangan', 'Status Kepulangan', 'Lokasi Kepulangan'];
 
   const lines = (Array.isArray(rows) ? rows : []).map((r) => {
     const inLocName = r?.in?.lokasi?.nama_lokasi ?? null;
     const outLocName = r?.out?.lokasi?.nama_lokasi ?? null;
 
-    // 2. Susun data sesuai urutan header yang baru (koordinat dihapus)
-    return [r?.tanggal ?? null, r?.user?.name ?? null, r?.user?.nip ?? null, formatTimeDot(r?.waktu_masuk), r?.status_masuk ?? null, inLocName, formatTimeDot(r?.waktu_pulang), r?.status_pulang ?? null, outLocName].map(toCsvCell).join(',');
+    return [
+      r?.tanggal ?? null,
+      r?.user?.name ?? null,
+      r?.user?.nip ?? null,
+      r?.model_absensi ?? 'Sekolah',
+      formatTimeDot(r?.waktu_masuk),
+      r?.status_masuk ?? null,
+      inLocName,
+      formatTimeDot(r?.waktu_pulang),
+      r?.status_pulang ?? null,
+      outLocName,
+    ]
+      .map(toCsvCell)
+      .join(',');
   });
 
-  // 3. Tetap gunakan 'sep=,' agar Excel otomatis membagi kolom dengan rapi
   const content = ['sep=,', headers.map(toCsvCell).join(','), ...lines].join('\n');
 
   downloadText(fileName || 'absensi.csv', content);
@@ -98,6 +108,28 @@ function StatusTag({ status }) {
         {isLate ? <WarningOutlined /> : <CheckCircleOutlined />}
         {label}
       </span>
+    </AppTag>
+  );
+}
+
+function ModelAbsensiTag({ value }) {
+  const label = value || 'Sekolah';
+  const isWfh = String(label).trim().toUpperCase() === 'WFH';
+
+  return (
+    <AppTag
+      color={isWfh ? 'blue' : 'green'}
+      style={{
+        margin: 0,
+        borderRadius: 999,
+        paddingInline: 10,
+        paddingBlock: 2,
+        fontWeight: 600,
+        fontFamily: 'var(--font-poppins)',
+        width: 'fit-content',
+      }}
+    >
+      {isWfh ? 'WFH' : 'Sekolah'}
     </AppTag>
   );
 }
@@ -145,7 +177,7 @@ export default function AbsensiByRolePage({ title, role }) {
   const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
-  const { rows, loading, range, setRange, message, client } = useFetchAbsensi({ role });
+  const { rows, loading, range, setRange, message, fetchAbsensiRows } = useFetchAbsensi({ role });
 
   const [viewMode, setViewMode] = React.useState('HARIAN'); // HARIAN | BULANAN
 
@@ -244,14 +276,7 @@ export default function AbsensiByRolePage({ title, role }) {
     message.loading('Menyiapkan export bulanan...', { key: msgKey, duration: 0 });
 
     try {
-      const params = new URLSearchParams();
-      if (role) params.set('role', String(role));
-      params.set('start_date', start_date);
-      params.set('end_date', end_date);
-      params.set('limit', '3000');
-
-      const res = await client.get(`/api/absensi?${params.toString()}`, { cache: 'no-store' });
-      const target = Array.isArray(res?.data) ? res.data : [];
+      const target = await fetchAbsensiRows({ start_date, end_date, limit: 3000 });
 
       if (!target || target.length === 0) {
         message.info('Tidak ada data untuk diexport.', { key: msgKey });
@@ -264,7 +289,7 @@ export default function AbsensiByRolePage({ title, role }) {
     } catch (err) {
       message.errorFrom(err, { fallback: 'Gagal export bulanan.', key: msgKey });
     }
-  }, [anchorDate, client, message, role, roleLabel]);
+  }, [anchorDate, fetchAbsensiRows, message, roleLabel]);
 
   const nameColTitle = roleLabel === 'Guru' ? 'Nama Guru' : roleLabel === 'Pegawai' ? 'Nama Pegawai' : 'Nama';
 
@@ -310,6 +335,13 @@ export default function AbsensiByRolePage({ title, role }) {
             {v || '-'}
           </AppTypography>
         ),
+      },
+      {
+        title: 'Keterangan',
+        key: 'model_absensi',
+        dataIndex: 'model_absensi',
+        width: 130,
+        render: (v) => <ModelAbsensiTag value={v} />,
       },
     ];
 
@@ -537,7 +569,7 @@ export default function AbsensiByRolePage({ title, role }) {
               </AppTypography>
             ) : (
               <AppTable
-                rowKey='id_absensi'
+                rowKey='row_key'
                 columns={columns}
                 dataSource={rows}
                 loading={loading}
@@ -549,7 +581,7 @@ export default function AbsensiByRolePage({ title, role }) {
                 refreshable={false}
                 exportCsv={false}
                 columnSettings={false}
-                scroll={{ x: isMonthly ? 1120 : 940 }}
+                scroll={{ x: isMonthly ? 1250 : 1070 }}
               />
             )}
           </AppFlex>

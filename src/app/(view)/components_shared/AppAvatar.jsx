@@ -200,7 +200,7 @@ export const AppAvatar = React.forwardRef(function AppAvatar(
 
   const seed = colorSeed ?? name ?? computedInitials ?? '';
   const hue = hashToHue(seed);
-  const autoBg = autoColor ? (gradient ? `linear-gradient(135deg, hsl(${hue} 70% 46%), hsl(${(hue + 35) % 360} 70% 46%))` : `hsl(${hue} 65% 45%)`) : undefined;
+  const autoBg = autoColor ? (gradient ? `linear-gradient(135deg, hsl(${hue} 65% 28%), hsl(${(hue + 35) % 360} 65% 28%))` : `hsl(${hue} 65% 28%)`) : undefined;
 
   const finalBg = bgColor ?? autoBg;
   const finalText = textColor ?? token?.colorTextLightSolid;

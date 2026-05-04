@@ -90,7 +90,7 @@ export default function UserRowHeader({ user, weekDates, assignments, patterns }
           {weeklySummary.map((item) => (
             <React.Fragment key={item.key}>
               <div className='text-slate-500'>{item.dayLabel}:</div>
-              <div className={item.isOff ? 'text-red-500 font-semibold' : 'text-blue-600'}>{item.label}</div>
+              <div className={item.isOff ? 'text-red-700 font-semibold' : 'text-blue-600'}>{item.label}</div>
             </React.Fragment>
           ))}
         </div>

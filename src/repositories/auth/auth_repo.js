@@ -8,6 +8,45 @@ export async function findUserById(id_user) {
   return await prisma.user.findUnique({ where: { id_user } });
 }
 
+export async function findUserDeviceByHash(device_id_hash) {
+  return await prisma.userDevice.findUnique({ where: { device_id_hash } });
+}
+
+export async function bindOrTouchUserDevice({ id_user, device_id_hash, device_name, device_platform, last_ip, last_user_agent }) {
+  return await prisma.$transaction(async (tx) => {
+    const existing = await tx.userDevice.findUnique({ where: { id_user } });
+    const now = new Date();
+
+    if (existing && existing.device_id_hash !== device_id_hash) {
+      return { matched: false, device: existing };
+    }
+
+    const data = {
+      device_name: device_name ?? null,
+      device_platform: device_platform ?? null,
+      last_ip: last_ip ?? null,
+      last_user_agent: last_user_agent ?? null,
+      last_login_at: now,
+    };
+
+    const device = existing
+      ? await tx.userDevice.update({
+          where: { id_user },
+          data,
+        })
+      : await tx.userDevice.create({
+          data: {
+            id_user,
+            device_id_hash,
+            ...data,
+            registered_at: now,
+          },
+        });
+
+    return { matched: true, device };
+  });
+}
+
 export async function createUserWithRole({ email, name, password_hash, role_name }) {
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({

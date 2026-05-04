@@ -96,8 +96,8 @@ function buildGradientStyle(gradient) {
     };
   }
 
-  const from = gradient.from ?? '#1677ff';
-  const to = gradient.to ?? '#13c2c2';
+  const from = gradient.from ?? '#0958d9';
+  const to = gradient.to ?? '#006d75';
   const deg = gradient.deg ?? 90;
 
   return {

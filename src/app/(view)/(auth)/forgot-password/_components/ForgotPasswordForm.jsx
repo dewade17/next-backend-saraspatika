@@ -19,7 +19,7 @@ export default function ForgotPasswordForm({ form, step, isSubmitting, cooldown,
         rules={[{ required: true, message: 'Masukkan email Anda!' }]}
       >
         <AppInput
-          prefix={<MailOutlined style={{ color: '#bfbfbf' }} />}
+          prefix={<MailOutlined style={{ color: '#595959' }} />}
           placeholder='nama@email.com'
           size='large'
           trim
@@ -38,7 +38,7 @@ export default function ForgotPasswordForm({ form, step, isSubmitting, cooldown,
             ]}
           >
             <AppInput
-              prefix={<SafetyCertificateOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<SafetyCertificateOutlined style={{ color: '#595959' }} />}
               placeholder='123456'
               size='large'
               inputMode='numeric'
@@ -56,7 +56,7 @@ export default function ForgotPasswordForm({ form, step, isSubmitting, cooldown,
             ]}
           >
             <AppInput.Password
-              prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<LockOutlined style={{ color: '#595959' }} />}
               placeholder='********'
               size='large'
             />
@@ -78,7 +78,7 @@ export default function ForgotPasswordForm({ form, step, isSubmitting, cooldown,
             ]}
           >
             <AppInput.Password
-              prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
+              prefix={<LockOutlined style={{ color: '#595959' }} />}
               placeholder='********'
               size='large'
             />
@@ -122,8 +122,9 @@ export default function ForgotPasswordForm({ form, step, isSubmitting, cooldown,
         style={{
           height: 44,
           fontWeight: 600,
-          backgroundColor: '#86D7A0',
-          borderColor: '#86D7A0',
+          backgroundColor: '#237804',
+          borderColor: '#237804',
+          color: '#ffffff',
         }}
       >
         {step === 1 ? 'Kirim Kode' : 'Reset Password'}

@@ -17,7 +17,7 @@ function StatCard({ value, label, icon }) {
       bordered={false}
       style={{
         borderRadius: 0,
-        backgroundColor: '#3B8CFF',
+        backgroundColor: '#096dd9',
         minHeight: 140,
         overflow: 'hidden',
       }}
@@ -172,22 +172,22 @@ export default function DashboardPage() {
           <StatCard
             value={loading ? '...' : String(stats.guruPegawai)}
             label={'Guru &\nPegawai'}
-            icon={<UserOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
+            icon={<UserOutlined style={{ fontSize: 64, color: '#ffffff' }} />}
           />
           <StatCard
             value={loading ? '...' : String(stats.verifikasiPengajuan)}
             label={'Verifikasi\nIzin/Sakit/Cuti'}
-            icon={<CheckCircleOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
+            icon={<CheckCircleOutlined style={{ fontSize: 64, color: '#ffffff' }} />}
           />
           <StatCard
             value={loading ? '...' : String(stats.agendaMengajar)}
             label={'Agenda\nMengajar'}
-            icon={<ProfileOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
+            icon={<ProfileOutlined style={{ fontSize: 64, color: '#ffffff' }} />}
           />
           <StatCard
             value={loading ? '...' : String(stats.agendaKerja)}
             label={'Agenda Kerja'}
-            icon={<CalendarOutlined style={{ fontSize: 64, color: 'rgba(0,0,0,0.65)' }} />}
+            icon={<CalendarOutlined style={{ fontSize: 64, color: '#ffffff' }} />}
           />
         </AppGrid>
       </div>
