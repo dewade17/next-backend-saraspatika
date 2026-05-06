@@ -62,28 +62,6 @@ export default function ForgotPasswordForm({ form, step, isSubmitting, cooldown,
             />
           </AppForm.Item>
 
-          <AppForm.Item
-            label='Konfirmasi Password'
-            name='confirmPassword'
-            dependencies={['newPassword']}
-            rules={[
-              { required: true, message: 'Konfirmasi password baru!' },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  const p = getFieldValue('newPassword');
-                  if (!value || value === p) return Promise.resolve();
-                  return Promise.reject(new Error('Konfirmasi tidak sama dengan password baru'));
-                },
-              }),
-            ]}
-          >
-            <AppInput.Password
-              prefix={<LockOutlined style={{ color: '#595959' }} />}
-              placeholder='********'
-              size='large'
-            />
-          </AppForm.Item>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, marginBottom: 18 }}>
             <AppButton
               type='link'

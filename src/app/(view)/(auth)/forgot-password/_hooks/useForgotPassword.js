@@ -66,7 +66,7 @@ export function useForgotPassword(form) {
 
   const onBackToEmail = () => {
     setStep(1);
-    form.setFieldsValue({ code: undefined, newPassword: undefined, confirmPassword: undefined });
+    form.setFieldsValue({ code: undefined, newPassword: undefined });
   };
 
   return {
