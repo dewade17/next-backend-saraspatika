@@ -5,22 +5,13 @@ import { getPermSet } from '@/lib/rbac_server.js';
 import { ACCESS_TOKEN_TTL, issueAccessToken } from '@/lib/jwt.js';
 import { sendResetCode } from '@/lib/mail.js';
 import { badRequest, conflict, unauthorized } from '@/lib/error.js';
-import {
-  findUserByEmail,
-  findUserById,
-  findUserDeviceByHash,
-  bindOrTouchUserDevice,
-  createUserWithRole,
-  createPasswordResetToken,
-  findLatestValidResetToken,
-  consumeResetTokenAndUpdatePassword,
-} from '@/repositories/auth/auth_repo.js';
+import { findUserByEmail, findUserById, findUserDeviceByHash, bindOrTouchUserDevice, createUserWithRole, createPasswordResetToken, findLatestValidResetToken, consumeResetTokenAndUpdatePassword } from '@/repositories/auth/auth_repo.js';
 
 const DEFAULT_ROLE = 'GURU';
 const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']);
 const INVALID_CREDENTIALS_MESSAGE = 'Email atau kata sandi yang Anda masukkan salah. Silakan coba lagi.';
-const DEVICE_LOCKED_MESSAGE = 'Akun ini sudah terdaftar di perangkat lain. Hubungi admin untuk reset perangkat.';
-const DEVICE_USED_MESSAGE = 'Perangkat ini sudah terdaftar untuk akun lain. Hubungi admin untuk reset perangkat.';
+const DEVICE_LOCKED_MESSAGE = 'Akun ini sudah terdaftar di perangkat lain.';
+const DEVICE_USED_MESSAGE = 'Perangkat ini sudah terdaftar untuk akun lain.';
 
 function normalizeEmail(email) {
   return String(email || '')
