@@ -40,12 +40,32 @@ function buildSearchWhere(q) {
   };
 }
 
-export async function listUsers({ q } = {}) {
-  return await prisma.user.findMany({
-    where: buildSearchWhere(q),
-    select: publicSelect,
-    orderBy: { created_at: 'desc' },
-  });
+export async function listUsers({ q, page, limit } = {}) {
+  const where = buildSearchWhere(q);
+  const hasPagination = Number.isInteger(page) && page > 0 && Number.isInteger(limit) && limit > 0;
+
+  if (!hasPagination) {
+    return await prisma.user.findMany({
+      where,
+      select: publicSelect,
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      select: publicSelect,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return { data, total, page, limit };
 }
 
 export async function getUserById(id_user) {

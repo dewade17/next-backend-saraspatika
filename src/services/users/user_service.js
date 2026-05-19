@@ -41,8 +41,8 @@ function generateInitialPassword() {
   return chars.join('');
 }
 
-export async function listUsersService({ q } = {}) {
-  return await listUsers({ q });
+export async function listUsersService({ q, page, limit } = {}) {
+  return await listUsers({ q, page, limit });
 }
 
 export async function getUserByIdService(id_user) {

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { UserAddOutlined } from '@ant-design/icons';
+import { Pagination } from 'antd';
 import { useRouter } from 'next/navigation';
 
 import UserCard from './_components/UserCard';
@@ -10,7 +11,6 @@ import { useFetchUsers } from './_hooks/useFetchUsers';
 import { useSubmitUser } from './_hooks/useSubmitUser';
 import { useDeleteUser } from './_hooks/useDeleteUser';
 import { useResetUserDevice } from './_hooks/useResetUserDevice';
-import { buildUserSearchIndex, normalizeQuery } from './_utils/userHelpers';
 import { H2 } from '@/app/(view)/components_shared/AppTypography.jsx';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
@@ -18,6 +18,7 @@ import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
 import AppInput from '@/app/(view)/components_shared/AppInput.jsx';
 import AppFloatButton from '@/app/(view)/components_shared/AppFloatButton.jsx';
 import AppSkeleton from '@/app/(view)/components_shared/AppSkeleton.jsx';
+import AppEmpty from '@/app/(view)/components_shared/AppEmpty.jsx';
 
 const PROFILE_MIN_DURATION_MS = 8;
 
@@ -26,7 +27,7 @@ export default function ManajemenPenggunaPage() {
   const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
-  const { users, loading, q, setQ, fetchUsers, client, message } = useFetchUsers();
+  const { users, loading, q, setQ, page, pageSize, total, handlePageChange, fetchUsers, client, message } = useFetchUsers();
 
   const { isOpen, setIsOpen, mode, activeUser, openCreate, openEdit, handleSubmit, submitting } = useSubmitUser({
     client,
@@ -45,21 +46,6 @@ export default function ManajemenPenggunaPage() {
     onSuccess: fetchUsers,
   });
 
-  const deferredQ = React.useDeferredValue(q);
-
-  const indexedUsers = React.useMemo(() => {
-    return users.map((user) => ({
-      user,
-      searchIndex: buildUserSearchIndex(user),
-    }));
-  }, [users]);
-
-  const filtered = React.useMemo(() => {
-    const normalized = normalizeQuery(deferredQ);
-    if (!normalized) return indexedUsers.map((item) => item.user);
-    return indexedUsers.filter((item) => item.searchIndex.includes(normalized)).map((item) => item.user);
-  }, [deferredQ, indexedUsers]);
-
   const openPermission = React.useCallback(
     (user) => {
       const id = user?.id_user;
@@ -75,10 +61,10 @@ export default function ManajemenPenggunaPage() {
       if (actualDuration < PROFILE_MIN_DURATION_MS) return;
 
       console.info(
-        `[Profiler][ManajemenPengguna] id=${id} phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms users=${filtered.length} q="${deferredQ}"`,
+        `[Profiler][ManajemenPengguna] id=${id} phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms users=${users.length} q="${q}"`,
       );
     },
-    [deferredQ, filtered.length],
+    [q, users.length],
   );
 
   return (
@@ -113,7 +99,7 @@ export default function ManajemenPenggunaPage() {
               value={q}
               onValueChange={setQ}
               emitOnChange
-              debounceMs={200}
+              debounceMs={0}
             />
           </React.Profiler>
         </div>
@@ -134,6 +120,11 @@ export default function ManajemenPenggunaPage() {
               </AppCard>
             ))}
           </AppGrid>
+        ) : users.length === 0 ? (
+          <AppEmpty
+            description={q ? 'Pengguna tidak ditemukan' : 'Belum ada data pengguna'}
+            style={{ padding: 32 }}
+          />
         ) : (
           <React.Profiler
             id='UserCardGrid'
@@ -143,7 +134,7 @@ export default function ManajemenPenggunaPage() {
               columns={{ base: 1, md: 2, lg: 3 }}
               gap={16}
             >
-              {filtered.map((u) => (
+              {users.map((u) => (
                 <UserCard
                   key={u.id_user}
                   user={u}
@@ -158,6 +149,23 @@ export default function ManajemenPenggunaPage() {
             </AppGrid>
           </React.Profiler>
         )}
+
+        {!loading && total > pageSize ? (
+          <AppFlex
+            justify='flex-end'
+            style={{ marginTop: 16, width: '100%' }}
+          >
+            <Pagination
+              current={page}
+              pageSize={pageSize}
+              total={total}
+              showSizeChanger
+              pageSizeOptions={['12', '24', '48', '96']}
+              showTotal={(count, range) => `${range[0]}-${range[1]} dari ${count} pengguna`}
+              onChange={handlePageChange}
+            />
+          </AppFlex>
+        ) : null}
       </div>
 
       <AppFloatButton
