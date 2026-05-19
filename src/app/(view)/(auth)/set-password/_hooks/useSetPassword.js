@@ -1,13 +1,12 @@
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import { useAppMessage } from '@/app/(view)/components_shared/AppMessage.jsx';
 import { createHttpClient } from '@/lib/http_client.js';
 
 export function useSetPassword({ token }) {
-  const router = useRouter();
   const message = useAppMessage();
   const client = React.useMemo(() => createHttpClient(), []);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSuccess, setIsSuccess] = React.useState(false);
 
   const onFinish = async (values) => {
     if (!token) {
@@ -23,8 +22,8 @@ export function useSetPassword({ token }) {
           newPassword: values.newPassword,
         },
       });
-      message.success('Password berhasil disimpan. Silakan login.');
-      router.push('/login');
+      message.success('Akun Anda sudah aktif.');
+      setIsSuccess(true);
     } catch (error) {
       message.errorFrom(error, { fallback: 'Gagal menyimpan password' });
     } finally {
@@ -34,6 +33,7 @@ export function useSetPassword({ token }) {
 
   return {
     isSubmitting,
+    isSuccess,
     onFinish,
   };
 }

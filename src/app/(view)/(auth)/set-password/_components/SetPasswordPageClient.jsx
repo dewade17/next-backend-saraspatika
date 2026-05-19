@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Layout, Grid } from 'antd';
+import { CheckCircleFilled } from '@ant-design/icons';
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppForm from '@/app/(view)/components_shared/AppForm.jsx';
 import AppImage from '@/app/(view)/components_shared/AppImage.jsx';
@@ -18,7 +19,7 @@ export default function SetPasswordPageClient({ token }) {
   const isMdUp = !!screens?.md;
   const form = AppForm.useForm();
 
-  const { isSubmitting, onFinish } = useSetPassword({ token });
+  const { isSubmitting, isSuccess, onFinish } = useSetPassword({ token });
 
   return (
     <Layout style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
@@ -52,40 +53,68 @@ export default function SetPasswordPageClient({ token }) {
             )}
 
             <div style={{ width: '100%', maxWidth: 420, margin: '0 auto' }}>
-              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+              <div style={{ textAlign: 'center', marginBottom: isSuccess ? 0 : 18 }}>
                 <AppImage
                   src='/assets/images/logo_saraspatika.png'
                   alt='Logo'
                   preview={false}
                   width={44}
-                  style={{ marginBottom: 10 }}
+                  style={{ marginBottom: isSuccess ? 18 : 10 }}
                 />
 
-                <AppTypography
-                  as='title'
-                  level={3}
-                  align='center'
-                  style={{ marginBottom: 4, fontWeight: 700 }}
-                >
-                  Atur Password
-                </AppTypography>
+                {isSuccess ? (
+                  <>
+                    <CheckCircleFilled style={{ color: '#237804', fontSize: 54, marginBottom: 16 }} />
 
-                <AppTypography
-                  as='text'
-                  tone='secondary'
-                  align='center'
-                  style={{ display: 'block' }}
-                >
-                  Masukkan password untuk mengaktifkan akun Anda.
-                </AppTypography>
+                    <AppTypography
+                      as='title'
+                      level={3}
+                      align='center'
+                      style={{ marginBottom: 8, fontWeight: 700 }}
+                    >
+                      Akun Anda sudah aktif
+                    </AppTypography>
+
+                    <AppTypography
+                      as='paragraph'
+                      tone='secondary'
+                      align='center'
+                      style={{ marginBottom: 0 }}
+                    >
+                      Silakan login ke sistem Saraspatika di handphone Anda.
+                    </AppTypography>
+                  </>
+                ) : (
+                  <>
+                    <AppTypography
+                      as='title'
+                      level={3}
+                      align='center'
+                      style={{ marginBottom: 4, fontWeight: 700 }}
+                    >
+                      Atur Password
+                    </AppTypography>
+
+                    <AppTypography
+                      as='text'
+                      tone='secondary'
+                      align='center'
+                      style={{ display: 'block' }}
+                    >
+                      Masukkan password untuk mengaktifkan akun Anda.
+                    </AppTypography>
+                  </>
+                )}
               </div>
 
-              <SetPasswordForm
-                form={form}
-                hasToken={!!token}
-                isSubmitting={isSubmitting}
-                onFinish={onFinish}
-              />
+              {!isSuccess && (
+                <SetPasswordForm
+                  form={form}
+                  hasToken={!!token}
+                  isSubmitting={isSubmitting}
+                  onFinish={onFinish}
+                />
+              )}
             </div>
           </AppGrid>
         </AppCard>
