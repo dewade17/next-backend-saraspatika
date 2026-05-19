@@ -4,6 +4,7 @@ import { apiRoute, parseBody } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
+import { buildPaginationMeta, parsePaginationParams } from '@/lib/pagination.js';
 import { faceResetRequestCreateValidation } from '@/validations/face_reset_requests/face_reset_request_validation.js';
 import { createFaceResetRequestService, listFaceResetRequestsService } from '@/services/face_reset_requests/face_reset_requests.js';
 
@@ -52,11 +53,15 @@ export const GET = apiRoute(async (req) => {
   const url = new URL(req.url);
   const status = url.searchParams.get('status');
   const id_user = url.searchParams.get('id_user');
+  const q = url.searchParams.get('q') || '';
+  const { page, limit } = parsePaginationParams(url.searchParams);
 
-  const data = await listFaceResetRequestsService({ status, id_user });
+  const result = await listFaceResetRequestsService({ status, id_user, q, page, limit });
+  const data = Array.isArray(result) ? result : result?.data ?? [];
+  const meta = Array.isArray(result) ? undefined : buildPaginationMeta({ page: result.page, limit: result.limit, total: result.total, q, status });
 
   return NextResponse.json(
-    { data },
+    meta ? { data, meta } : { data },
     {
       headers: { 'Cache-Control': 'no-store' },
     },

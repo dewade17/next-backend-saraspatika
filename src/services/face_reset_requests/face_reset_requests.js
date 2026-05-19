@@ -18,13 +18,16 @@ function normalizeText(value) {
   return normalized ? normalized : null;
 }
 
-export async function listFaceResetRequestsService({ status, id_user } = {}) {
+export async function listFaceResetRequestsService({ status, id_user, q, page, limit } = {}) {
   const normalizedStatus = normalizeStatus(status);
   const normalizedUserId = String(id_user ?? '').trim();
 
   return await listFaceResetRequests({
     status: normalizedStatus,
     id_user: normalizedUserId || undefined,
+    q,
+    page,
+    limit,
   });
 }
 

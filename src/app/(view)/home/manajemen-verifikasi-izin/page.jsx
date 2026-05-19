@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Pagination } from 'antd';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppGrid from '@/app/(view)/components_shared/AppGrid.jsx';
@@ -14,7 +15,7 @@ import { useAppMessage } from '@/app/(view)/components_shared/AppMessage.jsx';
 import { AppModalStatic } from '@/app/(view)/components_shared/AppModal.jsx';
 
 import { useManajemenVerifikasi } from './_hooks/useManajemenVerifikasi.js';
-import { matchQuery, matchMonth, toIdDate } from './_utils/helper.js';
+import { toIdDate } from './_utils/helper.js';
 import { JENIS_LABEL, STATUS_LABEL, STATUS_TAG_COLOR } from './_utils/constants.js';
 import SummaryCard from './_components/SummaryCard.jsx';
 
@@ -23,16 +24,9 @@ export default function ManajemenVerifikasiCutiPage() {
   const isMdUp = !!screens?.md;
 
   const message = useAppMessage();
-  const { rows, loading, busyId, updateStatus } = useManajemenVerifikasi();
+  const { rows, summaryRows, loading, busyId, q, setQ, month, setMonth, page, pageSize, total, handlePageChange, updateStatus } = useManajemenVerifikasi();
 
-  const [q, setQ] = React.useState('');
-  const [month, setMonth] = React.useState(null);
-
-  const filteredRows = React.useMemo(() => {
-    return rows.filter((r) => matchQuery(r, q) && matchMonth(r, month));
-  }, [rows, q, month]);
-
-  const summaryItems = React.useMemo(() => rows.filter((r) => String(r?.status).toUpperCase() === 'MENUNGGU').slice(0, 3), [rows]);
+  const summaryItems = summaryRows;
 
   const handleReject = React.useCallback(
     (item) => {
@@ -187,7 +181,8 @@ export default function ManajemenVerifikasiCutiPage() {
                 placeholder='Cari...'
                 value={q}
                 onValueChange={setQ}
-                debounceMs={200}
+                emitOnChange
+                debounceMs={0}
                 style={{ width: '100%' }}
               />
             </div>
@@ -200,11 +195,28 @@ export default function ManajemenVerifikasiCutiPage() {
             columnSettings={false}
             rowKey='id_pengajuan'
             columns={columns}
-            dataSource={filteredRows}
+            dataSource={rows}
             loading={loading}
-            pagination={{ pageSize: 8 }}
+            pagination={false}
             scroll={{ x: 800 }}
           />
+
+          {!loading && total > pageSize ? (
+            <AppFlex
+              justify='flex-end'
+              style={{ marginTop: 12, width: '100%' }}
+            >
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                showSizeChanger
+                pageSizeOptions={['8', '16', '32', '64']}
+                showTotal={(count, range) => `${range[0]}-${range[1]} dari ${count} pengajuan`}
+                onChange={handlePageChange}
+              />
+            </AppFlex>
+          ) : null}
         </AppCard>
       </div>
     </div>

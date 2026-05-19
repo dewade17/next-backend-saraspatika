@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { DeleteOutlined, HistoryOutlined, UserOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Pagination } from 'antd';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppFlex from '@/app/(view)/components_shared/AppFlex.jsx';
@@ -28,17 +29,28 @@ export default function ManajemenFacePage() {
   const [activeView, setActiveView] = React.useState('1');
 
   // Hook utama untuk mengambil data
-  const { rows: userRows, loading: loadingUsers, refresh: refreshUsers } = useFetchUsers();
-  const { rows: requestRows, loading: loadingRequests, refresh: refreshRequests } = useFetchFaceResetRequests();
+  const { rows: userRows, loading: loadingUsers, q: userQ, setQ: setUserQ, page: userPage, pageSize: userPageSize, total: userTotal, handlePageChange: handleUserPageChange, refresh: refreshUsers } = useFetchUsers();
+  const {
+    rows: requestRows,
+    loading: loadingRequests,
+    q: requestQ,
+    setQ: setRequestQ,
+    page: requestPage,
+    pageSize: requestPageSize,
+    total: requestTotal,
+    pendingCount: requestPendingCount,
+    handlePageChange: handleRequestPageChange,
+    refresh: refreshRequests,
+  } = useFetchFaceResetRequests();
   const { handleDeleteFace, deletingId } = useDeleteFace(refreshUsers);
   const { handleUpdateStatus, updatingId } = useUpdateFaceResetRequest(refreshRequests);
   // --- Logika Perhitungan Statistik ---
   const stats = React.useMemo(() => {
     return {
-      totalActive: userRows.length,
-      pendingCount: requestRows.filter((r) => r.status === 'MENUNGGU').length,
+      totalActive: userTotal,
+      pendingCount: requestPendingCount,
     };
-  }, [requestRows, userRows]);
+  }, [requestPendingCount, userTotal]);
 
   const handleRejectRequest = React.useCallback(
     (record) => {
@@ -256,13 +268,44 @@ export default function ManajemenFacePage() {
         styles={{ body: { padding: 0 } }}
       >
         <div style={{ padding: '16px 16px 0 16px' }}>
-          <AppTypography
-            as='text'
-            weight='bold'
-            size={16}
+          <AppFlex
+            align='center'
+            justify='space-between'
+            wrap
+            gap={10}
           >
-            {activeView === '1' ? 'Daftar Guru & Pegawai Terdaftar' : 'Daftar Antrian Request Reset'}
-          </AppTypography>
+            <AppTypography
+              as='text'
+              weight='bold'
+              size={16}
+            >
+              {activeView === '1' ? 'Daftar Guru & Pegawai Terdaftar' : 'Daftar Antrian Request Reset'}
+            </AppTypography>
+
+            {activeView === '1' ? (
+              <div style={{ width: isMdUp ? 280 : '100%' }}>
+                <AppInput.Search
+                  placeholder='Cari data face...'
+                  value={userQ}
+                  onValueChange={setUserQ}
+                  emitOnChange
+                  debounceMs={0}
+                  allowClear
+                />
+              </div>
+            ) : (
+              <div style={{ width: isMdUp ? 280 : '100%' }}>
+                <AppInput.Search
+                  placeholder='Cari request reset...'
+                  value={requestQ}
+                  onValueChange={setRequestQ}
+                  emitOnChange
+                  debounceMs={0}
+                  allowClear
+                />
+              </div>
+            )}
+          </AppFlex>
         </div>
 
         <AppTable
@@ -270,13 +313,48 @@ export default function ManajemenFacePage() {
           dataSource={activeView === '1' ? userRows : requestRows}
           rowKey={activeView === '1' ? 'id_user' : 'id_request'}
           loading={activeView === '1' ? loadingUsers : loadingRequests}
-          searchable
+          searchable={false}
           showToolbar={false}
           refreshable={false}
           columnSettings={false}
           exportCsv={false}
+          pagination={false}
           emptyText='Tidak ada data yang ditemukan'
         />
+
+        {activeView === '1' && !loadingUsers && userTotal > userPageSize ? (
+          <AppFlex
+            justify='flex-end'
+            style={{ width: '100%', padding: '0 16px 16px' }}
+          >
+            <Pagination
+              current={userPage}
+              pageSize={userPageSize}
+              total={userTotal}
+              showSizeChanger
+              pageSizeOptions={['12', '24', '48', '96']}
+              showTotal={(count, range) => `${range[0]}-${range[1]} dari ${count} data face`}
+              onChange={handleUserPageChange}
+            />
+          </AppFlex>
+        ) : null}
+
+        {activeView === '2' && !loadingRequests && requestTotal > requestPageSize ? (
+          <AppFlex
+            justify='flex-end'
+            style={{ width: '100%', padding: '0 16px 16px' }}
+          >
+            <Pagination
+              current={requestPage}
+              pageSize={requestPageSize}
+              total={requestTotal}
+              showSizeChanger
+              pageSizeOptions={['10', '20', '40', '80']}
+              showTotal={(count, range) => `${range[0]}-${range[1]} dari ${count} request`}
+              onChange={handleRequestPageChange}
+            />
+          </AppFlex>
+        ) : null}
       </AppCard>
     </div>
   );

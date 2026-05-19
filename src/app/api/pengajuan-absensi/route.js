@@ -4,6 +4,7 @@ import { apiRoute } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
+import { buildPaginationMeta, parsePaginationParams } from '@/lib/pagination.js';
 import { pengajuanCreateValidation } from '@/validations/pengajuan/pengajuan_validation.js';
 import { createPengajuanAbsensiService, listPengajuanAbsensiService } from '@/services/pengajuan/pengajuan_service.js';
 
@@ -90,16 +91,29 @@ export const GET = apiRoute(async (req) => {
   const target_id_user = url.searchParams.get('id_user') || undefined;
   const status = url.searchParams.get('status') || undefined;
   const jenis_pengajuan = url.searchParams.get('jenis_pengajuan') || undefined;
+  const q = url.searchParams.get('q') || '';
+  const start_date = url.searchParams.get('start_date') || undefined;
+  const end_date = url.searchParams.get('end_date') || undefined;
+  const { page, limit } = parsePaginationParams(url.searchParams);
 
-  const data = await listPengajuanAbsensiService({
+  const result = await listPengajuanAbsensiService({
     actor_id_user: id_user,
     target_id_user,
     status,
     jenis_pengajuan,
+    q,
+    start_date,
+    end_date,
+    page,
+    limit,
   });
+  const data = Array.isArray(result) ? result : result?.data ?? [];
+  const meta = Array.isArray(result)
+    ? undefined
+    : buildPaginationMeta({ page: result.page, limit: result.limit, total: result.total, q, status, jenis_pengajuan, start_date, end_date });
 
   return NextResponse.json(
-    { data },
+    meta ? { data, meta } : { data },
     {
       headers: { 'Cache-Control': 'no-store' },
     },

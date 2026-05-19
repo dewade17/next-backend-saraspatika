@@ -26,17 +26,68 @@ const publicSelect = {
   admin: { select: userSelect },
 };
 
-export async function listFaceResetRequests({ status, id_user } = {}) {
+const SEARCHABLE_STATUS = new Set(['MENUNGGU', 'SETUJU', 'DITOLAK']);
+
+function buildSearchWhere(q) {
+  const s = String(q || '').trim();
+  if (!s) return null;
+
+  const normalized = s.toUpperCase();
+  const or = [
+    { alasan: { contains: s, mode: 'insensitive' } },
+    { admin_note: { contains: s, mode: 'insensitive' } },
+    {
+      user: {
+        is: {
+          OR: [
+            { name: { contains: s, mode: 'insensitive' } },
+            { email: { contains: s, mode: 'insensitive' } },
+            { nip: { contains: s, mode: 'insensitive' } },
+          ],
+        },
+      },
+    },
+  ];
+
+  if (SEARCHABLE_STATUS.has(normalized)) or.push({ status: normalized });
+  if (normalized === 'DISETUJUI') or.push({ status: 'SETUJU' });
+
+  return { OR: or };
+}
+
+export async function listFaceResetRequests({ status, id_user, q, page, limit } = {}) {
   const where = {};
 
   if (status) where.status = status;
   if (id_user) where.id_user = id_user;
 
-  return await prisma.faceResetRequest.findMany({
-    where,
-    select: publicSelect,
-    orderBy: { created_at: 'desc' },
-  });
+  const searchWhere = buildSearchWhere(q);
+  if (searchWhere) where.OR = searchWhere.OR;
+
+  const hasPagination = Number.isInteger(page) && page > 0 && Number.isInteger(limit) && limit > 0;
+
+  if (!hasPagination) {
+    return await prisma.faceResetRequest.findMany({
+      where,
+      select: publicSelect,
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await prisma.$transaction([
+    prisma.faceResetRequest.findMany({
+      where,
+      select: publicSelect,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.faceResetRequest.count({ where }),
+  ]);
+
+  return { data, total, page, limit };
 }
 
 export async function findFaceResetRequestById(id_request) {

@@ -10,11 +10,41 @@ const publicSelect = {
   updated_at: true,
 };
 
-export async function listLokasi() {
-  return await prisma.lokasi.findMany({
-    select: publicSelect,
-    orderBy: { created_at: 'desc' },
-  });
+function buildSearchWhere(q) {
+  const s = String(q || '').trim();
+  if (!s) return undefined;
+
+  return {
+    nama_lokasi: { contains: s, mode: 'insensitive' },
+  };
+}
+
+export async function listLokasi({ q, page, limit } = {}) {
+  const where = buildSearchWhere(q);
+  const hasPagination = Number.isInteger(page) && page > 0 && Number.isInteger(limit) && limit > 0;
+
+  if (!hasPagination) {
+    return await prisma.lokasi.findMany({
+      where,
+      select: publicSelect,
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await prisma.$transaction([
+    prisma.lokasi.findMany({
+      where,
+      select: publicSelect,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.lokasi.count({ where }),
+  ]);
+
+  return { data, total, page, limit };
 }
 
 export async function findLokasiById(id_lokasi) {

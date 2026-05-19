@@ -40,6 +40,11 @@ function normalizeDateUtc(value, fieldName) {
   return new Date(`${dbDate}T00:00:00.000Z`);
 }
 
+function normalizeOptionalDateUtc(value, fieldName) {
+  if (value == null || value === '') return undefined;
+  return normalizeDateUtc(value, fieldName);
+}
+
 async function uploadFotoBukti(file, options = {}) {
   if (!file || typeof file === 'string' || typeof file.arrayBuffer !== 'function' || file.size === 0) {
     return null;
@@ -94,16 +99,27 @@ function assertReadableByActor(actor, pengajuan) {
   }
 }
 
-export async function listPengajuanAbsensiService({ actor_id_user, target_id_user, jenis_pengajuan, status } = {}) {
+export async function listPengajuanAbsensiService({ actor_id_user, target_id_user, jenis_pengajuan, status, q, start_date, end_date, page, limit } = {}) {
   const actor = await assertActor(actor_id_user);
   const requestedUserId = String(target_id_user ?? '').trim();
 
   const id_user = actor.isAdmin ? requestedUserId || undefined : actor.id_user;
+  const startAt = normalizeOptionalDateUtc(start_date, 'start_date');
+  const endAt = normalizeOptionalDateUtc(end_date, 'end_date');
+
+  if (startAt && endAt && startAt > endAt) {
+    throw badRequest('start_date tidak boleh lebih besar dari end_date', { code: 'date_range_invalid' });
+  }
 
   return await listPengajuanAbsensi({
     id_user,
     jenis_pengajuan: normalizeJenis(jenis_pengajuan),
     status: normalizeStatus(status),
+    q,
+    startAt,
+    endAt,
+    page,
+    limit,
   });
 }
 

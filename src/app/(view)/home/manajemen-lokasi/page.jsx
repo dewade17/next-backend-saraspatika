@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { EnvironmentOutlined, PlusOutlined } from '@ant-design/icons';
+import { Pagination } from 'antd';
 
 import AppCard from '@/app/(view)/components_shared/AppCard.jsx';
 import AppSpace from '@/app/(view)/components_shared/AppSpace.jsx';
@@ -19,13 +20,12 @@ import LocationFormModal from './_components/LocationFormModal';
 import { useFetchLocations } from './_hooks/useFetchLocations';
 import { useSubmitLocation } from './_hooks/useSubmitLocation';
 import { useDeleteLocation } from './_hooks/useDeleteLocation';
-import { matchesQuery } from './_utils/locationHelpers';
 
 export default function ManajemenLokasiPage() {
   const screens = AppGrid.useBreakpoint();
   const isMdUp = !!screens?.md;
 
-  const { locations, loading, q, setQ, message, fetchLocations, client } = useFetchLocations();
+  const { locations, loading, q, setQ, page, pageSize, total, handlePageChange, message, fetchLocations, client } = useFetchLocations();
 
   const { deletingId, handleDelete } = useDeleteLocation({
     client,
@@ -39,15 +39,11 @@ export default function ManajemenLokasiPage() {
     onSuccess: fetchLocations,
   });
 
-  const filtered = React.useMemo(() => locations.filter((l) => matchesQuery(l, q)), [locations, q]);
-
   const statsText = React.useMemo(() => {
-    const total = locations.length;
-    const shown = filtered.length;
     if (total === 0) return '0 lokasi';
-    if (shown === total) return `${total} lokasi`;
-    return `${shown} dari ${total} lokasi`;
-  }, [locations.length, filtered.length]);
+    if (locations.length === total) return `${total} lokasi`;
+    return `${locations.length} dari ${total} lokasi`;
+  }, [locations.length, total]);
 
   return (
     <div style={{ width: '100%', maxWidth: 1440, margin: '0 auto', padding: isMdUp ? 16 : 12 }}>
@@ -107,7 +103,7 @@ export default function ManajemenLokasiPage() {
                   value={q}
                   onValueChange={setQ}
                   emitOnChange
-                  debounceMs={200}
+                  debounceMs={0}
                   allowClear
                 />
               </div>
@@ -130,20 +126,20 @@ export default function ManajemenLokasiPage() {
               </AppCard>
             ))}
           </AppGrid>
-        ) : filtered.length === 0 ? (
+        ) : locations.length === 0 ? (
           <AppCard
             bordered
             style={{ borderRadius: 10 }}
             styles={{ body: { padding: 24 } }}
           >
-            <AppEmpty description={locations.length === 0 ? 'Belum ada lokasi.' : 'Tidak ada hasil pencarian.'} />
+            <AppEmpty description={q ? 'Tidak ada hasil pencarian.' : 'Belum ada lokasi.'} />
           </AppCard>
         ) : (
           <AppGrid
             columns={{ base: 1, sm: 2, md: 2, lg: 3 }}
             gap={16}
           >
-            {filtered.map((loc) => (
+            {locations.map((loc) => (
               <LocationCard
                 key={loc.id}
                 loc={loc}
@@ -154,6 +150,23 @@ export default function ManajemenLokasiPage() {
             ))}
           </AppGrid>
         )}
+
+        {!loading && total > pageSize ? (
+          <AppFlex
+            justify='flex-end'
+            style={{ width: '100%' }}
+          >
+            <Pagination
+              current={page}
+              pageSize={pageSize}
+              total={total}
+              showSizeChanger
+              pageSizeOptions={['12', '24', '48', '96']}
+              showTotal={(count, range) => `${range[0]}-${range[1]} dari ${count} lokasi`}
+              onChange={handlePageChange}
+            />
+          </AppFlex>
+        ) : null}
 
         <AppFloatButton
           icon={<PlusOutlined />}

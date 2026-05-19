@@ -4,6 +4,7 @@ import { apiRoute, parseBody } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
+import { buildPaginationMeta, parsePaginationParams } from '@/lib/pagination.js';
 import { lokasiCreateValidation } from '@/validations/lokasi/lokasi_validation.js';
 import { createLokasiService, listLokasiService } from '@/services/lokasi/lokasi_service.js';
 
@@ -36,13 +37,19 @@ async function requirePerm(resource, action) {
   return { id_user };
 }
 
-export const GET = apiRoute(async () => {
+export const GET = apiRoute(async (req) => {
   await requirePerm('lokasi', 'read');
 
-  const data = await listLokasiService();
+  const url = new URL(req.url);
+  const q = url.searchParams.get('q') || '';
+  const { page, limit } = parsePaginationParams(url.searchParams);
+
+  const result = await listLokasiService({ q, page, limit });
+  const data = Array.isArray(result) ? result : result?.data ?? [];
+  const meta = Array.isArray(result) ? undefined : buildPaginationMeta({ page: result.page, limit: result.limit, total: result.total, q });
 
   return NextResponse.json(
-    { data },
+    meta ? { data, meta } : { data },
     {
       headers: { 'Cache-Control': 'no-store' },
     },

@@ -11,9 +11,13 @@ function normalizeNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
-export async function listLokasiService() {
-  const rows = await listLokasi();
-  return Array.isArray(rows) ? rows : [];
+export async function listLokasiService({ q, page, limit } = {}) {
+  const result = await listLokasi({ q, page, limit });
+  if (Array.isArray(result)) return result;
+  return {
+    ...result,
+    data: Array.isArray(result?.data) ? result.data : [],
+  };
 }
 
 export async function getLokasiByIdService(id_lokasi) {

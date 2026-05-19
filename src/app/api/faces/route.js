@@ -4,6 +4,7 @@ import { apiRoute } from '@/lib/api.js';
 import { forbidden, unauthorized } from '@/lib/error.js';
 import { verifyAccessToken } from '@/lib/jwt.js';
 import { canFromClaims, getPermSet } from '@/lib/rbac_server.js';
+import { buildPaginationMeta, parsePaginationParams } from '@/lib/pagination.js';
 import { listFacesService } from '@/services/faces/face_service.js';
 
 export const runtime = 'nodejs';
@@ -35,13 +36,19 @@ async function requirePerm(resource, action) {
   return { id_user };
 }
 
-export const GET = apiRoute(async () => {
+export const GET = apiRoute(async (req) => {
   await requirePerm('pengguna', 'read');
 
-  const data = await listFacesService();
+  const url = new URL(req.url);
+  const q = url.searchParams.get('q') || '';
+  const { page, limit } = parsePaginationParams(url.searchParams);
+
+  const result = await listFacesService({ q, page, limit });
+  const data = Array.isArray(result) ? result : result?.data ?? [];
+  const meta = Array.isArray(result) ? undefined : buildPaginationMeta({ page: result.page, limit: result.limit, total: result.total, q });
 
   return NextResponse.json(
-    { data },
+    meta ? { data, meta } : { data },
     {
       headers: { 'Cache-Control': 'no-store' },
     },
