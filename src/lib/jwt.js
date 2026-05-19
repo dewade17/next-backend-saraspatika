@@ -3,7 +3,7 @@ import { env } from './env.js';
 import { prisma } from './db.js';
 
 const secret = new TextEncoder().encode(env.JWT_SECRET);
-export const ACCESS_TOKEN_TTL = '20m';
+export const ACCESS_TOKEN_TTL = '90d';
 
 export const issueAccessToken = (payload, ttl = ACCESS_TOKEN_TTL) => new SignJWT(payload).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime(ttl).sign(secret);
 

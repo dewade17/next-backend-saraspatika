@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 
 const isProd = process.env.NODE_ENV === 'production';
-export const DEFAULT_AUTH_COOKIE_MAX_AGE = 60 * 20;
+export const DEFAULT_AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
 export async function setAuthCookie(token) {
   (await cookies()).set('access_token', token, {

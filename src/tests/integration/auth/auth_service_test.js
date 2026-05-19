@@ -16,7 +16,7 @@ vi.mock('@/repositories/auth/auth_repo.js', () => repo);
 const rbac = { getPermSet: vi.fn() };
 vi.mock('@/lib/rbac_server.js', () => rbac);
 
-const jwt = { ACCESS_TOKEN_TTL: '20m', issueAccessToken: vi.fn() };
+const jwt = { ACCESS_TOKEN_TTL: '90d', issueAccessToken: vi.fn() };
 vi.mock('@/lib/jwt.js', () => jwt);
 
 const mail = { sendResetCode: vi.fn() };
@@ -124,7 +124,7 @@ describe('auth_service', () => {
     repo.findUserByEmail.mockResolvedValue({ id_user: 'u1', email: 'a@b.com', password_hash: 'h', session_version: 0 });
     const res = await svc.login({ email: 'a@b.com', password: 'x', deviceId: 'device-1234567890' });
 
-    expect(jwt.issueAccessToken).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', email: 'a@b.com' }), '20m');
+    expect(jwt.issueAccessToken).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', email: 'a@b.com' }), '90d');
     expect(res.token).toBe('jwt.token');
   });
 
