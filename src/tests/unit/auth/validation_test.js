@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { registerValidation, loginValidation, requestTokenValidation, resetPasswordValidation } from '@/validations/auth/auth_validation.js';
+import { registerValidation, loginValidation, requestTokenValidation, resetPasswordValidation, setPasswordValidation } from '@/validations/auth/auth_validation.js';
 
 describe('auth_validation', () => {
   it('registerValidation: minimal payload valid', async () => {
@@ -44,6 +44,22 @@ describe('auth_validation', () => {
       resetPasswordValidation.parseAsync({
         email: 'a@b.com',
         code: '12a456',
+        newPassword: '12345678',
+      }),
+    ).rejects.toMatchObject({ name: 'ZodError' });
+  });
+
+  it('setPasswordValidation: requires token and password', async () => {
+    const ok = await setPasswordValidation.parseAsync({
+      token: 'token-id.raw-token-value',
+      newPassword: '12345678',
+    });
+
+    expect(ok.token).toBe('token-id.raw-token-value');
+
+    await expect(
+      setPasswordValidation.parseAsync({
+        token: 'short',
         newPassword: '12345678',
       }),
     ).rejects.toMatchObject({ name: 'ZodError' });

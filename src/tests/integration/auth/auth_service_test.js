@@ -8,6 +8,7 @@ const repo = {
   createUserWithRole: vi.fn(),
   createPasswordResetToken: vi.fn(),
   findLatestValidResetToken: vi.fn(),
+  findValidResetTokenById: vi.fn(),
   consumeResetTokenAndUpdatePassword: vi.fn(),
 };
 vi.mock('@/repositories/auth/auth_repo.js', () => repo);
@@ -15,7 +16,7 @@ vi.mock('@/repositories/auth/auth_repo.js', () => repo);
 const rbac = { getPermSet: vi.fn() };
 vi.mock('@/lib/rbac_server.js', () => rbac);
 
-const jwt = { issueAccessToken: vi.fn() };
+const jwt = { ACCESS_TOKEN_TTL: '20m', issueAccessToken: vi.fn() };
 vi.mock('@/lib/jwt.js', () => jwt);
 
 const mail = { sendResetCode: vi.fn() };
@@ -189,6 +190,41 @@ describe('auth_service', () => {
 
     await svc.resetPassword({ email: 'a@b.com', code: '123456', newPassword: '12345678' });
 
+    expect(crypto.hashPassword).toHaveBeenCalledWith('12345678');
+    expect(repo.consumeResetTokenAndUpdatePassword).toHaveBeenCalledWith({
+      id_user: 'u1',
+      id_password_reset_token: 't1',
+      password_hash: 'hash_pw',
+    });
+  });
+
+  it('setPasswordWithToken: badRequest if token missing separator', async () => {
+    await expect(svc.setPasswordWithToken({ token: 'bad-token', newPassword: '12345678' })).rejects.toMatchObject({
+      status: 400,
+      code: 'invalid_set_password_token',
+    });
+  });
+
+  it('setPasswordWithToken: badRequest if token not found', async () => {
+    repo.findValidResetTokenById.mockResolvedValue(null);
+
+    await expect(svc.setPasswordWithToken({ token: 't1.raw-token', newPassword: '12345678' })).rejects.toMatchObject({
+      status: 400,
+      code: 'invalid_set_password_token',
+    });
+  });
+
+  it('setPasswordWithToken: consumes token + updates password', async () => {
+    repo.findValidResetTokenById.mockResolvedValue({
+      id_password_reset_token: 't1',
+      id_user: 'u1',
+      code_hash: 'stored_hash',
+    });
+
+    await svc.setPasswordWithToken({ token: 't1.raw-token', newPassword: '12345678' });
+
+    expect(repo.findValidResetTokenById).toHaveBeenCalledWith('t1', expect.any(Date));
+    expect(bcryptMock.compare).toHaveBeenCalledWith('raw-token', 'stored_hash');
     expect(crypto.hashPassword).toHaveBeenCalledWith('12345678');
     expect(repo.consumeResetTokenAndUpdatePassword).toHaveBeenCalledWith({
       id_user: 'u1',

@@ -67,12 +67,20 @@ export async function sendResetCode(email, code) {
   });
 }
 
-export async function sendInitialAccountPassword({ email, name, password }) {
+export async function sendInitialPasswordSetupLink({ email, name, token, expiresAt }) {
   const safeName = escapeHtml(name || 'Pengguna');
   const safeEmail = escapeHtml(email);
-  const safePassword = escapeHtml(password);
-  const loginUrl = `${String(env.APP_URL || '').replace(/\/+$/g, '')}/login`;
-  const safeLoginUrl = escapeHtml(loginUrl);
+  const setupUrl = `${String(env.APP_URL || '').replace(/\/+$/g, '')}/set-password?token=${encodeURIComponent(token)}`;
+  const safeSetupUrl = escapeHtml(setupUrl);
+  const safeExpiresAt = escapeHtml(
+    expiresAt
+      ? new Intl.DateTimeFormat('id-ID', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'Asia/Makassar',
+        }).format(expiresAt)
+      : '',
+  );
 
   const htmlBody = `
   <div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -85,16 +93,23 @@ export async function sendInitialAccountPassword({ email, name, password }) {
     </p>
 
     <p style="font-size: 16px; color: #555; line-height: 1.6;">
-      Akun Anda telah dibuat oleh admin. Gunakan informasi berikut untuk login.
+      Akun Anda telah dibuat oleh admin. Silakan atur password akun Anda melalui tombol berikut.
     </p>
 
     <div style="background-color: #f4f4f7; border-radius: 8px; padding: 22px; margin: 24px 0;">
       <p style="font-size: 15px; color: #555; margin: 0 0 10px 0;"><b>Email:</b> ${safeEmail}</p>
-      <p style="font-size: 15px; color: #555; margin: 0;"><b>Password:</b> <span style="font-family: 'Courier New', Courier, monospace;">${safePassword}</span></p>
+      ${safeExpiresAt ? `<p style="font-size: 15px; color: #555; margin: 0;"><b>Berlaku sampai:</b> ${safeExpiresAt} WITA</p>` : ''}
     </div>
 
-    <p style="font-size: 16px; color: #555; line-height: 1.6; margin-top: 20px;">
-      Simpan informasi ini dengan aman dan jangan bagikan kepada orang lain.
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${safeSetupUrl}" style="display: inline-block; background-color: #237804; color: #ffffff; text-decoration: none; padding: 12px 22px; border-radius: 6px; font-weight: 700;">
+        Atur Password
+      </a>
+    </div>
+
+    <p style="font-size: 14px; color: #777; line-height: 1.6; margin-top: 20px;">
+      Jika tombol tidak dapat dibuka, salin link ini ke browser Anda:<br>
+      <a href="${safeSetupUrl}" style="color: #237804; word-break: break-all;">${safeSetupUrl}</a>
     </p>
 
     <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
@@ -109,7 +124,7 @@ export async function sendInitialAccountPassword({ email, name, password }) {
     from: `"Saraspatika" <${env.GMAIL_USER}>`,
     to: email,
     subject: 'Akun Saraspatika Anda Telah Dibuat',
-    text: `Akun Saraspatika Anda telah dibuat.\n\nEmail: ${email}\nPassword: ${password}\nLogin: ${loginUrl}`,
+    text: `Akun Saraspatika Anda telah dibuat.\n\nEmail: ${email}\nAtur password: ${setupUrl}${expiresAt ? `\nBerlaku sampai: ${safeExpiresAt} WITA` : ''}`,
     html: htmlBody,
   });
 }

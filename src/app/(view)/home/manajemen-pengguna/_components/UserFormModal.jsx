@@ -115,13 +115,15 @@ export default function UserFormModal({ open, onOpenChange, mode, initialValues,
               feedback
             />
           </AppForm.Item>
-          <AppForm.Item
-            label={isCreate ? 'Password (kosongkan untuk otomatis)' : 'Password (opsional)'}
-            name='password'
-            rules={[{ min: 8, message: 'Minimal 8 karakter' }]}
-          >
-            <AppInput.Password placeholder='Password' />
-          </AppForm.Item>
+          {!isCreate && (
+            <AppForm.Item
+              label='Password (opsional)'
+              name='password'
+              rules={[{ min: 8, message: 'Minimal 8 karakter' }]}
+            >
+              <AppInput.Password placeholder='Password' />
+            </AppForm.Item>
+          )}
         </AppGrid>
 
         <AppFlex

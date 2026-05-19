@@ -89,6 +89,16 @@ export async function findLatestValidResetToken(id_user, now = new Date()) {
   });
 }
 
+export async function findValidResetTokenById(id_password_reset_token, now = new Date()) {
+  return await prisma.passwordResetToken.findFirst({
+    where: {
+      id_password_reset_token,
+      consumed_at: null,
+      expires_at: { gt: now },
+    },
+  });
+}
+
 export async function consumeResetTokenAndUpdatePassword({ id_user, id_password_reset_token, password_hash }) {
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.update({

@@ -1,8 +1,9 @@
 import { randomInt } from 'node:crypto';
 import { hashPassword } from '@/lib/crypto.js';
-import { sendInitialAccountPassword } from '@/lib/mail.js';
+import { sendInitialPasswordSetupLink } from '@/lib/mail.js';
 import { clearPermCache } from '@/lib/rbac_server.js';
 import { badRequest } from '@/lib/error.js';
+import { createPasswordSetupToken } from '@/services/auth/auth_service.js';
 import { createUserWithRole, deleteUser, getUserById, listUsers, resetUserDevice, updateUserWithRole } from '@/repositories/users/user_repo.js';
 
 function normalizeEmail(email) {
@@ -40,11 +41,6 @@ function generateInitialPassword() {
   return chars.join('');
 }
 
-function resolveInitialPassword(inputPassword) {
-  const password = String(inputPassword ?? '').trim();
-  return password || generateInitialPassword();
-}
-
 export async function listUsersService({ q } = {}) {
   return await listUsers({ q });
 }
@@ -60,7 +56,7 @@ export async function createUserService(input) {
   if (!email) throw badRequest('Email wajib diisi', { code: 'email_required' });
 
   const role_name = normalizeRole(input.role);
-  const password = resolveInitialPassword(input.password);
+  const password = generateInitialPassword();
   const password_hash = await hashPassword(password);
 
   const user = await createUserWithRole({
@@ -77,14 +73,16 @@ export async function createUserService(input) {
   clearPermCache(user.id_user);
 
   try {
-    await sendInitialAccountPassword({
+    const setup = await createPasswordSetupToken({ id_user: user.id_user });
+    await sendInitialPasswordSetupLink({
       email: user.email,
       name: user.name,
-      password,
+      token: setup.token,
+      expiresAt: setup.expires_at,
     });
   } catch (err) {
-    throw badRequest('Pengguna dibuat, tetapi email password gagal dikirim. Periksa konfigurasi email.', {
-      code: 'initial_password_email_failed',
+    throw badRequest('Pengguna dibuat, tetapi email link set password gagal dikirim. Periksa konfigurasi email.', {
+      code: 'set_password_email_failed',
       cause: err,
     });
   }

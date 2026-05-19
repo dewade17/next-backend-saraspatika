@@ -35,3 +35,8 @@ export const resetPasswordValidation = z.object({
   code: z.preprocess((v) => String(v ?? '').trim(), z.string().regex(/^\d{6}$/, 'Kode harus 6 digit')),
   newPassword: z.string().min(8).max(72),
 });
+
+export const setPasswordValidation = z.object({
+  token: z.string().trim().min(20).max(300),
+  newPassword: z.string().min(8).max(72),
+});

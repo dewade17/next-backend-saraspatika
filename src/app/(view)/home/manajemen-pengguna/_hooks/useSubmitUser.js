@@ -49,7 +49,7 @@ export function useSubmitUser({ client, message, onSuccess }) {
 
         await client[method](url, requestOptions);
 
-        message.success(`Pengguna berhasil ${isEdit ? 'diperbarui' : 'dibuat'}`);
+        message.success(isEdit ? 'Pengguna berhasil diperbarui' : 'Pengguna berhasil dibuat. Link set password dikirim ke email.');
         setIsOpen(false);
         if (onSuccess) await onSuccess();
       } catch (err) {

@@ -1,17 +1,19 @@
 import bcrypt from 'bcryptjs';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { hashPassword, verifyPassword, sixDigit } from '@/lib/crypto.js';
 import { getPermSet } from '@/lib/rbac_server.js';
 import { ACCESS_TOKEN_TTL, issueAccessToken } from '@/lib/jwt.js';
 import { sendResetCode } from '@/lib/mail.js';
 import { badRequest, conflict, unauthorized } from '@/lib/error.js';
-import { findUserByEmail, findUserById, findUserDeviceByHash, bindOrTouchUserDevice, createUserWithRole, createPasswordResetToken, findLatestValidResetToken, consumeResetTokenAndUpdatePassword } from '@/repositories/auth/auth_repo.js';
+import { findUserByEmail, findUserById, findUserDeviceByHash, bindOrTouchUserDevice, createUserWithRole, createPasswordResetToken, findLatestValidResetToken, findValidResetTokenById, consumeResetTokenAndUpdatePassword } from '@/repositories/auth/auth_repo.js';
 
 const DEFAULT_ROLE = 'GURU';
 const ALLOWED_SELF_ROLES = new Set(['GURU', 'PEGAWAI']);
 const INVALID_CREDENTIALS_MESSAGE = 'Email atau kata sandi yang Anda masukkan salah. Silakan coba lagi.';
 const DEVICE_LOCKED_MESSAGE = 'Akun ini sudah terdaftar di perangkat lain.';
 const DEVICE_USED_MESSAGE = 'Perangkat ini sudah terdaftar untuk akun lain.';
+const PASSWORD_SETUP_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+const INVALID_SET_PASSWORD_TOKEN_MESSAGE = 'Link set password tidak valid atau sudah kedaluwarsa.';
 
 function normalizeEmail(email) {
   return String(email || '')
@@ -37,6 +39,20 @@ function hashDeviceId(deviceId) {
 
 function sessionVersionOf(user) {
   return Number.isInteger(user?.session_version) ? user.session_version : 0;
+}
+
+function splitPasswordSetupToken(token) {
+  const value = String(token ?? '').trim();
+  const separatorIndex = value.indexOf('.');
+
+  if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
+    throw badRequest(INVALID_SET_PASSWORD_TOKEN_MESSAGE, { code: 'invalid_set_password_token' });
+  }
+
+  return {
+    id_password_reset_token: value.slice(0, separatorIndex),
+    rawToken: value.slice(separatorIndex + 1),
+  };
 }
 
 async function issueUserToken({ user, perms, deviceIdHash }) {
@@ -147,6 +163,43 @@ export async function resetPassword({ email, code, newPassword }) {
   await consumeResetTokenAndUpdatePassword({
     id_user: user.id_user,
     id_password_reset_token: token.id_password_reset_token,
+    password_hash,
+  });
+
+  return { ok: true };
+}
+
+export async function createPasswordSetupToken({ id_user }) {
+  const rawToken = randomBytes(32).toString('base64url');
+  const code_hash = await bcrypt.hash(rawToken, 12);
+  const expires_at = new Date(Date.now() + PASSWORD_SETUP_TOKEN_TTL_MS);
+
+  const token = await createPasswordResetToken({ id_user, code_hash, expires_at });
+
+  return {
+    token: `${token.id_password_reset_token}.${rawToken}`,
+    expires_at,
+  };
+}
+
+export async function setPasswordWithToken({ token, newPassword }) {
+  const { id_password_reset_token, rawToken } = splitPasswordSetupToken(token);
+  const resetToken = await findValidResetTokenById(id_password_reset_token, new Date());
+
+  if (!resetToken) {
+    throw badRequest(INVALID_SET_PASSWORD_TOKEN_MESSAGE, { code: 'invalid_set_password_token' });
+  }
+
+  const match = await bcrypt.compare(rawToken, resetToken.code_hash);
+  if (!match) {
+    throw badRequest(INVALID_SET_PASSWORD_TOKEN_MESSAGE, { code: 'invalid_set_password_token' });
+  }
+
+  const password_hash = await hashPassword(newPassword);
+
+  await consumeResetTokenAndUpdatePassword({
+    id_user: resetToken.id_user,
+    id_password_reset_token: resetToken.id_password_reset_token,
     password_hash,
   });
 

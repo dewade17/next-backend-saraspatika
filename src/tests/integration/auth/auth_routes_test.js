@@ -9,6 +9,7 @@ const authSvc = {
   register: vi.fn(),
   requestResetToken: vi.fn(),
   resetPassword: vi.fn(),
+  setPasswordWithToken: vi.fn(),
   getPrivateUserData: vi.fn(),
 };
 vi.mock('@/services/auth/auth_service.js', () => authSvc);
@@ -16,7 +17,7 @@ vi.mock('@/services/auth/auth_service.js', () => authSvc);
 const jwtLib = { verifyAccessToken: vi.fn() };
 vi.mock('@/lib/jwt.js', () => jwtLib);
 
-let loginRoute, registerRoute, logoutRoute, requestTokenRoute, resetPasswordRoute, getDataPrivateRoute;
+let loginRoute, registerRoute, logoutRoute, requestTokenRoute, resetPasswordRoute, setPasswordRoute, getDataPrivateRoute;
 
 beforeEach(async () => {
   vi.resetModules();
@@ -28,6 +29,7 @@ beforeEach(async () => {
   logoutRoute = await import('@/app/api/auth/logout/route.js');
   requestTokenRoute = await import('@/app/api/auth/request-token/route.js');
   resetPasswordRoute = await import('@/app/api/auth/reset-password/route.js');
+  setPasswordRoute = await import('@/app/api/auth/set-password/route.js');
   getDataPrivateRoute = await import('@/app/api/auth/getdataprivate/route.js');
 });
 
@@ -142,6 +144,24 @@ describe('auth routes', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     expect(authSvc.resetPassword).toHaveBeenCalled();
+  });
+
+  it('POST /auth/set-password: ok', async () => {
+    authSvc.setPasswordWithToken.mockResolvedValue({ ok: true });
+
+    const req = new Request('http://localhost/api/auth/set-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: 'token-id.raw-token-value', newPassword: '12345678' }),
+    });
+
+    const res = await setPasswordRoute.POST(req);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(authSvc.setPasswordWithToken).toHaveBeenCalledWith({
+      token: 'token-id.raw-token-value',
+      newPassword: '12345678',
+    });
   });
 
   it('GET /auth/getdataprivate: ok with token cookie, no-store header', async () => {
